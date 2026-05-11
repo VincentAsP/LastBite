@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 11 Bulan Mei 2026 pada 14.36
+-- Waktu pembuatan: 11 Bulan Mei 2026 pada 17.00
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -124,7 +124,8 @@ CREATE TABLE `user` (
   `username` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `address` text DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `email` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -186,6 +187,7 @@ ALTER TABLE `timer`
 --
 ALTER TABLE `user`
   ADD PRIMARY KEY (`userID`),
+  ADD UNIQUE KEY `email` (`email`),
   ADD KEY `roleID` (`roleID`);
 
 --
