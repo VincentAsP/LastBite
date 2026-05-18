@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 11 Bulan Mei 2026 pada 17.00
+-- Waktu pembuatan: 18 Bulan Mei 2026 pada 16.52
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -121,7 +121,9 @@ CREATE TABLE `timer` (
 CREATE TABLE `user` (
   `userID` int(11) NOT NULL,
   `roleID` int(11) NOT NULL,
-  `username` varchar(100) NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `birth_date` date DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `address` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
