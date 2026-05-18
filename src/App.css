@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+
+.page-wrapper {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #dae6d8 0%, #92af8c 100%);
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 402px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 26px 36px;
+  box-sizing: border-box;
+}
+
+.brand-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.cookie-icon {
+  font-size: 90px;
+  line-height: 1;
+  margin-bottom: 4px;
+  filter: sepia(0.4) saturate(0.7) hue-rotate(30deg) brightness(0.75);
+}
+
+.brand-name {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #324d3e;
+  margin: 0 0 8px;
+  letter-spacing: normal;
+}
+
+.page-title {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #748b6f;
+  margin: 0 0 8px;
+  text-align: center;
+  letter-spacing: normal;
+}
+
+.page-subtitle {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  color: #748b6f;
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.field-label {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #748b6f;
+  margin-bottom: 6px;
+}
+
+.text-input {
+  width: 100%;
+  height: 41px;
+  border-radius: 50px;
+  background: #fff;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+  border: none;
+  padding: 0 16px;
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  color: #748b6f;
+  opacity: 1;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.text-input::placeholder {
+  color: #748b6f;
+  opacity: 0.25;
+  text-decoration: underline;
+}
+
+.text-input:focus {
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(116, 139, 111, 0.4);
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper .text-input {
+  padding-right: 44px;
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.remember-checkbox {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid #fff;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.remember-checkbox.checked {
+  background: #324d3e;
+  border-color: #324d3e;
+}
+
+.remember-text {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: #324d3e;
+}
+
+.forgot-link {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  color: #324d3e;
+  text-decoration: none;
+  text-align: right;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.submit-btn {
+  align-self: center;
+  padding: 5px 32px 6px;
+  border-radius: 61px;
+  background: #324d3e;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+  border: none;
+  color: #fff;
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0 auto 20px;
+  display: block;
+  transition: opacity 0.2s;
+}
+
+.submit-btn:hover {
+  opacity: 0.9;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 21px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #748b6f;
+}
+
+.divider-label {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #748b6f;
+}
+
+.social-buttons {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 38px;
+  border-radius: 50px;
+  background: #324d3e;
+  box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+  border: none;
+  color: #fff;
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.social-btn:hover {
+  opacity: 0.9;
+}
+
+.signup-prompt {
+  font-family: Poppins, -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  margin: 0;
+}
+
+.signup-link {
+  font-weight: 700;
+  color: #748b6f;
+  text-decoration: none;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+  .login-card {
+    padding: 32px 20px 28px;
+  }
+}
