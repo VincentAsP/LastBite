@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 11 Bulan Mei 2026 pada 17.00
+-- Waktu pembuatan: 19 Bulan Mei 2026 pada 05.34
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -100,6 +100,14 @@ CREATE TABLE `role` (
   `name` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `role`
+--
+
+INSERT INTO `role` (`roleID`, `name`) VALUES
+(1, 'buyer'),
+(2, 'seller');
+
 -- --------------------------------------------------------
 
 --
@@ -121,7 +129,9 @@ CREATE TABLE `timer` (
 CREATE TABLE `user` (
   `userID` int(11) NOT NULL,
   `roleID` int(11) NOT NULL,
-  `username` varchar(100) NOT NULL,
+  `first_name` varchar(50) NOT NULL,
+  `last_name` varchar(50) NOT NULL,
+  `birth_date` date DEFAULT NULL,
   `password` varchar(255) NOT NULL,
   `address` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -228,7 +238,7 @@ ALTER TABLE `report`
 -- AUTO_INCREMENT untuk tabel `role`
 --
 ALTER TABLE `role`
-  MODIFY `roleID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `roleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT untuk tabel `timer`
