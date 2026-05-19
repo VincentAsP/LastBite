@@ -1,69 +1,83 @@
+// Akun Admin
+// Email: admin@lastbite.com
+// Password: admin123
+
 const bcrypt = require('bcrypt');
-const pool = require('../config/db'); 
+const pool = require('../config/db');
 const sendVerificationEmail = require('../utils/mailer');
 const jwt = require('jsonwebtoken');
 
 async function registerUser(req, res) {
     try {
-        const { username, email, password, roleID, address } = req.body;
+        const { full_name, birth_date, email, password, roleID, address } = req.body;
 
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        const sqlQuery = 'INSERT INTO user (username, email, password, roleID, address) VALUES (?, ?, ?, ?, ?)';
+        const sqlQuery = 'INSERT INTO user (full_name, birth_date, email, password, roleID, address) VALUES (?, ?, ?, ?, ?, ?)';
         
-        //Modifikasi pakai await
-        await pool.query(sqlQuery, [username, email, hashedPassword, roleID, address]);
+        await pool.query(sqlQuery, [full_name, birth_date, email, hashedPassword, roleID, address]);
         
+        // OTP Email
+        const otpRandom = Math.floor(1000 + Math.random() * 9000); 
+        sendVerificationEmail(email, otpRandom); 
         
-        const otpRandom = Math.floor(1000 + Math.random() * 9000); // Bikin 4 angka acak
-        sendVerificationEmail(email, otpRandom); // Kirim OTP ke email user
-        
-        res.status(201).json({ message: "Registrasi Sukses!" });
+        return res.status(201).json({ message: "Registrasi Sukses & Email Verifikasi Terkirim!" });
 
     } catch (error) {
-        console.error("Error Registrasi:", error);
+        console.error("Error saat register:", error);
         
-        // Bonus: Menangkap error jika email/username sudah ada di database (Duplicate Entry)
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ message: "Email atau Username sudah terdaftar!" });
+            return res.status(400).json({ message: "Email sudah terdaftar!" });
         }
         
-        res.status(500).json({ message: "Terjadi kesalahan internal server." });
+        return res.status(500).json({ message: "Terjadi kesalahan internal server." });
     }
 }
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ message: 'email dan password wajib diisi!' });
-    }
-
     try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email dan password wajib diisi!' });
+        }
+
+        // Ambil data user dari database
         const [users] = await pool.query('SELECT * FROM user WHERE email = ?', [email]);
 
         if (users.length === 0) {
-            return res.status(401).json({ message: 'Username atau password salah!' });
+            return res.status(401).json({ message: 'Email atau password salah!' });
         }
 
         const user = users[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
         if (!validPassword) {
-            return res.status(401).json({ message: 'Username atau password salah!' });
+            return res.status(401).json({ message: 'Email atau password salah!' });
         }
 
         const token = jwt.sign(
-            { id: user.userID, username: user.username, role: user.roleID },
+            { id: user.userID, full_name: user.full_name, role: user.roleID },
             process.env.JWT_SECRET || 'fallback_secret_key', 
             { expiresIn: '1h' }
         );
 
-        res.json({ message: 'Login berhasil!', token: token });
+        let redirectTarget = '/dashboard'; // Direct default untuk Buyer & Seller
+        
+        if (user.roleID === 3) {
+            redirectTarget = '/admin-panel'; // Direct khusus untuk Admin
+        }
+
+        return res.status(200).json({ 
+            message: 'Login berhasil!', 
+            token: token,
+            redirectTo: redirectTarget 
+        });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server saat login' });
+        console.error("Error saat login:", error);
+        return res.status(500).json({ message: 'Terjadi kesalahan pada server saat login' });
     }
 };
 
