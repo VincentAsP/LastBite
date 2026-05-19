@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-// Import rute yang sudah kita buat
+// Import rute 
 const authRoutes = require('./src/routes/authroutes');
 
 const app = express();
@@ -12,7 +12,6 @@ const port = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Menggunakan Rute
 // Karena kita pasang '/api' di sini, maka URL akhirnya menjadi /api/register dan /api/login
 app.use('/api', authRoutes);
 
