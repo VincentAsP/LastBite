@@ -1,53 +1,35 @@
+// Akun Admin
+// Email: admin@lastbite.com
+// Password: admin123
+
 const bcrypt = require('bcrypt');
-const pool = require('../config/db'); 
+const pool = require('../config/db');
 const sendVerificationEmail = require('../utils/mailer');
 const jwt = require('jsonwebtoken');
 const validate_email = require('deep-email-validator')
 
 async function registerUser(req, res) {
     try {
-        // 1. Ambil data dari req.body (Gunakan username, bukan name)
-        const { username, email, birth_date, password } = req.body;
+        const { full_name, birth_date, email, password, roleID, address } = req.body;
 
-        // 2. Validasi input (Pastikan nama variabelnya sesuai)
-        if (!username || !email || !password || !birth_date) {
-            return res.status(400).json({ message: "All fields are required." });
-        }
-
-        if (!email.includes('@')) {
-            return res.status(400).json({ message: "Format email tidak valid!" });
-        }
-
-        const emailValidation = await validate_email.validate(email);
-           if (!emailValidation.valid) {
-               return res.status(400).json({ 
-                   message: "Email tidak valid atau tidak aktif! Gunakan email asli." 
-               });
-           }
-
-        // 3. Hash Password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 4. SQL Query (roleID langsung di-hardcode 1 di dalam query string)
-        const sqlQuery = 'INSERT INTO user (username, email, password, roleID, birth_date) VALUES (?, ?, ?, 1, ?)';
+        const sqlQuery = 'INSERT INTO user (full_name, birth_date, email, password, roleID, address) VALUES (?, ?, ?, ?, ?, ?)';
         
-        // 5. Eksekusi query dengan array parameter yang urutannya pas
-        // birth_date dimasukkan sebagai string 'YYYY-MM-DD' langsung aman ke XAMPP MySQL
-        await pool.query(sqlQuery, [username, email, hashedPassword, birth_date]);
+        await pool.query(sqlQuery, [full_name, birth_date, email, hashedPassword, roleID, address]);
         
-        // 6. OTP & Email Verification
+        // OTP Email
         const otpRandom = Math.floor(1000 + Math.random() * 9000); 
         sendVerificationEmail(email, otpRandom); 
         
-        return res.status(201).json({ message: "Registrasi Sukses!" });
+        return res.status(201).json({ message: "Registrasi Sukses & Email Verifikasi Terkirim!" });
 
     } catch (error) {
-        console.error("Error Registrasi:", error);
+        console.error("Error saat register:", error);
         
-        // Menangkap error jika email/username duplikat di MySQL XAMPP
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ message: "Email atau Username sudah terdaftar!" });
+            return res.status(400).json({ message: "Email sudah terdaftar!" });
         }
         
         return res.status(500).json({ message: "Terjadi kesalahan internal server." });
@@ -55,14 +37,14 @@ async function registerUser(req, res) {
 }
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ message: 'email dan password wajib diisi!' });
-    }
-
     try {
-        
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email dan password wajib diisi!' });
+        }
+
+        // Ambil data user dari database
         const [users] = await pool.query('SELECT * FROM user WHERE email = ?', [email]);
 
         if (users.length === 0) {
@@ -78,14 +60,25 @@ const login = async (req, res) => {
 
         // Generate JWT Token (Menggunakan kolom userID dan roleID sesuai struktur database kamu)
         const token = jwt.sign(
-            { id: user.userID, username: user.username, role: user.roleID },
+            { id: user.userID, full_name: user.full_name, role: user.roleID },
             process.env.JWT_SECRET || 'fallback_secret_key', 
             { expiresIn: '1h' }
         );
 
-        return res.json({ message: 'Login berhasil!', token: token });
+        let redirectTarget = '/dashboard'; // Direct default untuk Buyer & Seller
+        
+        if (user.roleID === 3) {
+            redirectTarget = '/admin-panel'; // Direct khusus untuk Admin
+        }
+
+        return res.status(200).json({ 
+            message: 'Login berhasil!', 
+            token: token,
+            redirectTo: redirectTarget 
+        });
+
     } catch (error) {
-        console.error(error);
+        console.error("Error saat login:", error);
         return res.status(500).json({ message: 'Terjadi kesalahan pada server saat login' });
     }
 };
