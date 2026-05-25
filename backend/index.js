@@ -15,7 +15,8 @@ app.use(express.json());
 
 // Karena kita pasang '/api' di sini, maka URL akhirnya menjadi /api/register dan /api/login
 app.use('/lastbite', authRoutes);
-app.use('/product', product)
+app.use('/product', productRoutes)
+app.use('/user', )
 
 
 // Start Server

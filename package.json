@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "deep-email-validator": "^0.1.27",
     "nodemailer": "^8.0.7"
   }
 }

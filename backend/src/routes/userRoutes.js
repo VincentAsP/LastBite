@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
 
-router.post('/addProduct', productController.addProduct);
-router.post('/getProduct', productController.getProductsByGeolocation);
+// URL: GET /api/products/nearby?lat=...&lng=...
+router.get('/nearby', productController.getProductsByGeolocation);
 
 module.exports = router;
