@@ -1,41 +1,22 @@
-// controllers/timer.controller.js
-
-// Simulasi database/penyimpanan sementara.
-// Di dunia nyata, Anda menyimpannya di Database (MySQL/MongoDB/PostgreSQL) atau Redis.
-const activeTimers = {}; 
-
-const syncTime = (req, res) => {
-    try {
+async function getTimer(req, res){
+     const [products] = await db.query('SELECT * FROM product WHERE status = "active"');
         
-        const {userId, sellerId} = req; 
-        
-        const serverTime = Date.now();
-        const timerDuration = 10 * 60 * 1000; // 10 menit
+        const currentTime = new Date();
 
-        // Cek apakah user ini sudah punya timer yang berjalan
-        if (!activeTimers[userId]) {
-            // Jika belum ada, buat deadline baru
-            activeTimers[userId] = serverTime + timerDuration;
-        }
+        const productsWithTimer = products.map(product => {
+            const expiry = new Date(product.expiryTime);
+            const timeDiff = expiry - currentTime; // Hasilnya dalam milidetik
 
-        const endTime = activeTimers[userId];
+            // Cek apakah sudah expired
+            if (timeDiff <= 0) {
+                return { ...product, countdown: 0, status: 'expired' };
+            }
 
-        // Kirim response
-        return res.status(200).json({
-            success: true,
-            serverTime: serverTime,
-            endTime: endTime
+            return { 
+                ...product, 
+                countdown: Math.floor(timeDiff / 1000) // Kirim sisa waktu dalam detik ke frontend
+            };
         });
 
-    } catch (error) {
-        console.error("Error in syncTime controller:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Terjadi kesalahan pada server"
-        });
-    }
-};
-
-module.exports = {
-    syncTime
-};
+        res.json(productsWithTimer);
+}

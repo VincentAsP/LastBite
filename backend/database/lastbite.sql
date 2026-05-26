@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 26, 2026 at 07:33 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Waktu pembuatan: 25 Bulan Mei 2026 pada 09.23
+-- Versi server: 10.4.32-MariaDB
+-- Versi PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dashboard`
+-- Struktur dari tabel `dashboard`
 --
 
 CREATE TABLE `dashboard` (
@@ -36,7 +36,7 @@ CREATE TABLE `dashboard` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `delivery`
+-- Struktur dari tabel `delivery`
 --
 
 CREATE TABLE `delivery` (
@@ -49,7 +49,7 @@ CREATE TABLE `delivery` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `order`
+-- Struktur dari tabel `order`
 --
 
 CREATE TABLE `order` (
@@ -62,7 +62,7 @@ CREATE TABLE `order` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `order_item`
+-- Struktur dari tabel `order_item`
 --
 
 CREATE TABLE `order_item` (
@@ -75,7 +75,7 @@ CREATE TABLE `order_item` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `product`
+-- Struktur dari tabel `product`
 --
 
 CREATE TABLE `product` (
@@ -91,7 +91,7 @@ CREATE TABLE `product` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `report`
+-- Struktur dari tabel `report`
 --
 
 CREATE TABLE `report` (
@@ -104,7 +104,7 @@ CREATE TABLE `report` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `role`
+-- Struktur dari tabel `role`
 --
 
 CREATE TABLE `role` (
@@ -113,7 +113,7 @@ CREATE TABLE `role` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `role`
+-- Dumping data untuk tabel `role`
 --
 
 INSERT INTO `role` (`roleID`, `name`) VALUES
@@ -124,19 +124,7 @@ INSERT INTO `role` (`roleID`, `name`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `store_timer`
---
-
-CREATE TABLE `store_timer` (
-  `timerID` int(11) NOT NULL,
-  `startTime` datetime NOT NULL,
-  `endTime` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `timer`
+-- Struktur dari tabel `timer`
 --
 
 CREATE TABLE `timer` (
@@ -148,7 +136,7 @@ CREATE TABLE `timer` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `user`
+-- Struktur dari tabel `user`
 --
 
 CREATE TABLE `user` (
@@ -163,39 +151,39 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `user`
+-- Dumping data untuk tabel `user`
 --
 
 INSERT INTO `user` (`userID`, `roleID`, `full_name`, `birth_date`, `password`, `address`, `created_at`, `email`) VALUES
-(1, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com');
+(99, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com');
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `dashboard`
+-- Indeks untuk tabel `dashboard`
 --
 ALTER TABLE `dashboard`
   ADD PRIMARY KEY (`dashboardID`),
   ADD KEY `userID` (`userID`);
 
 --
--- Indexes for table `delivery`
+-- Indeks untuk tabel `delivery`
 --
 ALTER TABLE `delivery`
   ADD PRIMARY KEY (`deliverID`),
   ADD KEY `orderID` (`orderID`);
 
 --
--- Indexes for table `order`
+-- Indeks untuk tabel `order`
 --
 ALTER TABLE `order`
   ADD PRIMARY KEY (`orderID`),
   ADD KEY `userID` (`userID`);
 
 --
--- Indexes for table `order_item`
+-- Indeks untuk tabel `order_item`
 --
 ALTER TABLE `order_item`
   ADD PRIMARY KEY (`orderItemID`),
@@ -203,14 +191,14 @@ ALTER TABLE `order_item`
   ADD KEY `productID` (`productID`);
 
 --
--- Indexes for table `product`
+-- Indeks untuk tabel `product`
 --
 ALTER TABLE `product`
   ADD PRIMARY KEY (`productID`),
   ADD KEY `sellerID` (`sellerID`);
 
 --
--- Indexes for table `report`
+-- Indeks untuk tabel `report`
 --
 ALTER TABLE `report`
   ADD PRIMARY KEY (`reportID`),
@@ -218,26 +206,20 @@ ALTER TABLE `report`
   ADD KEY `sellerID` (`sellerID`);
 
 --
--- Indexes for table `role`
+-- Indeks untuk tabel `role`
 --
 ALTER TABLE `role`
   ADD PRIMARY KEY (`roleID`);
 
 --
--- Indexes for table `store_timer`
---
-ALTER TABLE `store_timer`
-  ADD PRIMARY KEY (`timerID`);
-
---
--- Indexes for table `timer`
+-- Indeks untuk tabel `timer`
 --
 ALTER TABLE `timer`
   ADD PRIMARY KEY (`timerID`),
   ADD KEY `productID` (`productID`);
 
 --
--- Indexes for table `user`
+-- Indeks untuk tabel `user`
 --
 ALTER TABLE `user`
   ADD PRIMARY KEY (`userID`),
@@ -245,119 +227,113 @@ ALTER TABLE `user`
   ADD KEY `roleID` (`roleID`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT untuk tabel yang dibuang
 --
 
 --
--- AUTO_INCREMENT for table `dashboard`
+-- AUTO_INCREMENT untuk tabel `dashboard`
 --
 ALTER TABLE `dashboard`
   MODIFY `dashboardID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `delivery`
+-- AUTO_INCREMENT untuk tabel `delivery`
 --
 ALTER TABLE `delivery`
   MODIFY `deliverID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `order`
+-- AUTO_INCREMENT untuk tabel `order`
 --
 ALTER TABLE `order`
   MODIFY `orderID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `order_item`
+-- AUTO_INCREMENT untuk tabel `order_item`
 --
 ALTER TABLE `order_item`
   MODIFY `orderItemID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `product`
+-- AUTO_INCREMENT untuk tabel `product`
 --
 ALTER TABLE `product`
   MODIFY `productID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `report`
+-- AUTO_INCREMENT untuk tabel `report`
 --
 ALTER TABLE `report`
   MODIFY `reportID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `role`
+-- AUTO_INCREMENT untuk tabel `role`
 --
 ALTER TABLE `role`
   MODIFY `roleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT for table `store_timer`
---
-ALTER TABLE `store_timer`
-  MODIFY `timerID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `timer`
+-- AUTO_INCREMENT untuk tabel `timer`
 --
 ALTER TABLE `timer`
   MODIFY `timerID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `user`
+-- AUTO_INCREMENT untuk tabel `user`
 --
 ALTER TABLE `user`
   MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
 
 --
--- Constraints for dumped tables
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
 
 --
--- Constraints for table `dashboard`
+-- Ketidakleluasaan untuk tabel `dashboard`
 --
 ALTER TABLE `dashboard`
   ADD CONSTRAINT `dashboard_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`) ON DELETE CASCADE;
 
 --
--- Constraints for table `delivery`
+-- Ketidakleluasaan untuk tabel `delivery`
 --
 ALTER TABLE `delivery`
   ADD CONSTRAINT `delivery_ibfk_1` FOREIGN KEY (`orderID`) REFERENCES `order` (`orderID`) ON DELETE CASCADE;
 
 --
--- Constraints for table `order`
+-- Ketidakleluasaan untuk tabel `order`
 --
 ALTER TABLE `order`
   ADD CONSTRAINT `order_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`);
 
 --
--- Constraints for table `order_item`
+-- Ketidakleluasaan untuk tabel `order_item`
 --
 ALTER TABLE `order_item`
   ADD CONSTRAINT `order_item_ibfk_1` FOREIGN KEY (`orderID`) REFERENCES `order` (`orderID`) ON DELETE CASCADE,
   ADD CONSTRAINT `order_item_ibfk_2` FOREIGN KEY (`productID`) REFERENCES `product` (`productID`) ON DELETE CASCADE;
 
 --
--- Constraints for table `product`
+-- Ketidakleluasaan untuk tabel `product`
 --
 ALTER TABLE `product`
   ADD CONSTRAINT `product_ibfk_1` FOREIGN KEY (`sellerID`) REFERENCES `user` (`userID`) ON DELETE CASCADE;
 
 --
--- Constraints for table `report`
+-- Ketidakleluasaan untuk tabel `report`
 --
 ALTER TABLE `report`
   ADD CONSTRAINT `report_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`),
   ADD CONSTRAINT `report_ibfk_2` FOREIGN KEY (`sellerID`) REFERENCES `user` (`userID`);
 
 --
--- Constraints for table `timer`
+-- Ketidakleluasaan untuk tabel `timer`
 --
 ALTER TABLE `timer`
   ADD CONSTRAINT `timer_ibfk_1` FOREIGN KEY (`productID`) REFERENCES `product` (`productID`) ON DELETE CASCADE;
 
 --
--- Constraints for table `user`
+-- Ketidakleluasaan untuk tabel `user`
 --
 ALTER TABLE `user`
   ADD CONSTRAINT `user_ibfk_1` FOREIGN KEY (`roleID`) REFERENCES `role` (`roleID`);

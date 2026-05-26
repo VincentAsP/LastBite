@@ -32,9 +32,28 @@ const findNearbyProduct = (lat, lng, radius) => {
                 resolve(results); // Kalau sukses, kirim datanya
             }
         });
-    })
+    });
+};
+
+const updateExpiredProducts = () => {
+    return new Promise((resolve, reject) => {
+        const sql = `
+        UPDATE product 
+        SET status = 'inactive'
+        WHERE expiryTime <= NOW() AND status = 'active'
+        `;
+        db.query(sql, (err, results) => {
+            if (err) {
+                reject(err);
+            } else {
+                // affectedRows berisi angka jumlah data yang berhasil diubah statusnya
+                resolve(results.affectedRows); 
+            }
+        });
+    });
 };
 
 module.exports = {
-    findNearbyProduct
+    findNearbyProduct,
+    updateExpiredProducts
 };

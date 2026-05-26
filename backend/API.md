@@ -29,7 +29,7 @@ Mendaftarkan pengguna baru dan mengirimkan email OTP.
   ```json
   {
     "username": "axel",
-    "email": "user@gmail.com",
+    "email": "admin",
     "password": "password123",
     "roleID": 1,
     "address": "Jakarta"
@@ -42,9 +42,13 @@ Login pengguna dan mengirimkan email OTP.
 - **URL:** `/api/login`
 - **Method:** `POST`
 - **Body Request (JSON):**
+
   ```json
   {
     "email": "user@gmail.com",
     "password": "password123"
   }
+  contoh aja, klo mau email yang  asli tanya tim be
   ```
+
+  ## 3.
