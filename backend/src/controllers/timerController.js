@@ -6,9 +6,8 @@ const activeTimers = {};
 
 const syncTime = (req, res) => {
     try {
-        // Asumsikan ada ID user yang dikirim dari client (misal: via query atau token)
-        // Jika tidak ada, kita pakai 'guest' sebagai default untuk contoh ini
-        const userId = req.query.userId || 'guest-123'; 
+        
+        const {userId, sellerId} = req; 
         
         const serverTime = Date.now();
         const timerDuration = 10 * 60 * 1000; // 10 menit
