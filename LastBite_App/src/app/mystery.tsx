@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useCart } from '../context/CartContext';
-
+import { useToast } from './Toastprovider';
 /* ──────────────── DATA ──────────────── */
 
 const boxes = [
@@ -67,8 +67,6 @@ const HOME_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/bed9da293
 const CART_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/e89e2d602d11a2de8ff32895a3552e5d9987bf68?width=60';
 const HISTORY_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/8c990238ba69088582be0114e07ca52e0eb6de07?width=60';
 
-/* ──────────────── CUSTOM HOOK ──────────────── */
-
 function useCountdown(initialSeconds: number) {
   const [seconds, setSeconds] = useState(initialSeconds);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -87,8 +85,6 @@ function useCountdown(initialSeconds: number) {
   return `${mm}:${ss}`;
 }
 
-/* ──────────────── CARD COMPONENT ──────────────── */
-
 interface BoxCardProps {
   box: (typeof boxes)[number];
   favorited: boolean;
@@ -98,27 +94,41 @@ interface BoxCardProps {
 function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
   const timeLeft = useCountdown(box.timer);
   const { addItem } = useCart();
+  const toast = useToast(); // ← pakai toast hook
+
+  const handleAddToCart = () => {
+    try {
+      addItem({
+        id: box.id,
+        name: box.title,
+        restaurant: box.store,
+        price: parseInt(box.price.replace(/\D/g, ''), 10),
+        image: box.image,
+      });
+      // ✅ Toast success
+      toast.success('Added to cart', `${box.title} added successfully`);
+    } catch (e) {
+      // ❌ Toast error (kalau ada error misal stok habis di backend nanti)
+      toast.error('Failed to add', 'Please try again');
+    }
+  };
 
   return (
     <View style={styles.card}>
-      {/* Image + overlays */}
       <View style={styles.cardImageWrapper}>
         <Image source={{ uri: box.image }} style={styles.cardImage} />
 
-        {/* Timer badge (top-left) */}
         <View style={styles.timerBadge}>
           <Ionicons name="time-outline" size={12} color="#fff" />
           <Text style={styles.timerText}>{timeLeft}</Text>
         </View>
 
-        {/* Price badge (bottom-right) */}
         <View style={styles.priceBadge}>
           <Text style={styles.priceText}>{box.price}</Text>
           <Text style={styles.originalPriceText}>{box.originalPrice}</Text>
         </View>
       </View>
 
-      {/* Card body */}
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <Text style={styles.cardTitle}>{box.title}</Text>
@@ -132,22 +142,11 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
         </View>
 
         <View style={styles.cardRow}>
-            <MaterialCommunityIcons name="storefront-outline" size={12} color="#5F5E5B" />
-              <Text style={styles.cardStore}>{box.store}</Text>
-                <Pressable
-                  style={styles.addToCartBtn}
-                  onPress={() =>
-                    addItem({
-                      id: box.id,
-                      name: box.title,
-                      restaurant: box.store,
-                      price: parseInt(box.price.replace(/\D/g, ''), 10),
-                      image: box.image,
-                    })
-                  }
-              >
-                <Ionicons name="add" size={16} color="#fff" />
-            </Pressable>
+          <MaterialCommunityIcons name="storefront-outline" size={12} color="#5F5E5B" />
+          <Text style={styles.cardStore}>{box.store}</Text>
+          <Pressable style={styles.addToCartBtn} onPress={handleAddToCart}>
+            <Ionicons name="add" size={16} color="#fff" />
+          </Pressable>
         </View>
 
         <View style={styles.cardFooter}>
@@ -163,8 +162,6 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
     </View>
   );
 }
-
-/* ──────────────── MAIN SCREEN ──────────────── */
 
 export default function MysteryBox() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'vegan' | 'halal'>('all');
@@ -186,45 +183,28 @@ export default function MysteryBox() {
   });
 
   return (
-    <LinearGradient
-      colors={['#DAE6D8', '#92AF8C']}
-      style={styles.container}
-    >
-      {/* Header */}
+    <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.container}>
       <View style={styles.header}>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => router.push('/home')}
-        >
+        <Pressable style={styles.backButton} onPress={() => router.push('/home')}>
           <Ionicons name="chevron-back" size={20} color="#1F3A2E" />
         </Pressable>
-
         <Image source={{ uri: PROFILE_IMG }} style={styles.profileImage} />
       </View>
 
-      {/* Category tabs */}
       <View style={styles.tabsRow}>
         <Pressable style={[styles.tabButton, styles.tabButtonActive]}>
           <Text style={[styles.tabButtonText, styles.tabButtonTextActive]}>
             Mystery Boxes
           </Text>
         </Pressable>
-
-        <Pressable
-          style={styles.tabButton}
-          onPress={() => router.push('/food')}
-        >
+        <Pressable style={styles.tabButton} onPress={() => router.push('/food')}>
           <Text style={styles.tabButtonText}>Food Pages</Text>
         </Pressable>
       </View>
 
-      {/* Filter chips */}
       <View style={styles.tabsRow}>
         <Pressable
-          style={[
-            styles.filterChip,
-            activeFilter === 'all' && styles.filterChipActive,
-          ]}
+          style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
           onPress={() => setActiveFilter('all')}
         >
           <Text
@@ -238,10 +218,7 @@ export default function MysteryBox() {
         </Pressable>
 
         <Pressable
-          style={[
-            styles.filterChip,
-            activeFilter === 'vegan' && styles.filterChipActive,
-          ]}
+          style={[styles.filterChip, activeFilter === 'vegan' && styles.filterChipActive]}
           onPress={() => setActiveFilter('vegan')}
         >
           <Text
@@ -255,10 +232,7 @@ export default function MysteryBox() {
         </Pressable>
 
         <Pressable
-          style={[
-            styles.filterChip,
-            activeFilter === 'halal' && styles.filterChipActive,
-          ]}
+          style={[styles.filterChip, activeFilter === 'halal' && styles.filterChipActive]}
           onPress={() => setActiveFilter('halal')}
         >
           <Text
@@ -272,13 +246,11 @@ export default function MysteryBox() {
         </Pressable>
       </View>
 
-      {/* Scrollable content */}
       <ScrollView
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Section header */}
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionTitle}>Flash Rescues Near You</Text>
@@ -292,7 +264,6 @@ export default function MysteryBox() {
           </Pressable>
         </View>
 
-        {/* Cards list */}
         <View style={styles.cardsList}>
           {filteredBoxes.length === 0 ? (
             <View style={styles.emptyState}>
@@ -313,31 +284,16 @@ export default function MysteryBox() {
         </View>
       </ScrollView>
 
-      {/* Bottom navigation */}
-      <LinearGradient
-        colors={['#DAE6D8', '#92AF8C']}
-        style={styles.bottomNav}
-      >
-        <Pressable
-          style={styles.bottomNavItem}
-          onPress={() => router.push('/home')}
-        >
+      <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.bottomNav}>
+        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/home')}>
           <Image source={{ uri: HOME_NAV_ICON }} style={styles.bottomNavIcon} />
           <Text style={styles.bottomNavLabel}>Home</Text>
         </Pressable>
-
-        <Pressable
-          style={styles.bottomNavItem}
-          onPress={() => router.push('/cart' as any)}
-        >
+        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/cart' as any)}>
           <Image source={{ uri: CART_NAV_ICON }} style={styles.bottomNavIcon} />
           <Text style={styles.bottomNavLabel}>Cart</Text>
         </Pressable>
-
-        <Pressable
-          style={styles.bottomNavItem}
-          onPress={() => router.push('/history')}
-        >
+        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/history')}>
           <Image source={{ uri: HISTORY_NAV_ICON }} style={styles.bottomNavIcon} />
           <Text style={styles.bottomNavLabel}>History</Text>
         </Pressable>
@@ -347,29 +303,13 @@ export default function MysteryBox() {
 }
 
 const shadowStyle = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  android: {
-    elevation: 3,
-  },
-  default: {
-    boxShadow: '0 2px 4px 0 rgba(0,0,0,0.15)',
-  },
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
+  android: { elevation: 3 },
+  default: { boxShadow: '0 2px 4px 0 rgba(0,0,0,0.15)' },
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    maxWidth: 402,
-    alignSelf: 'center',
-    width: '100%',
-  },
-
-  /* Header */
+  container: { flex: 1, maxWidth: 402, alignSelf: 'center', width: '100%' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -379,21 +319,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+    width: 44, height: 44, borderRadius: 16,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     ...shadowStyle,
   },
-  profileImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-
-  /* Tabs & Filters */
+  profileImage: { width: 56, height: 56, borderRadius: 28 },
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -402,91 +333,34 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   tabButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    ...shadowStyle,
+    paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: '#fff', ...shadowStyle,
   },
-  tabButtonActive: {
-    backgroundColor: '#4F6144',
-  },
-  tabButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#000',
-  },
-  tabButtonTextActive: {
-    color: '#fff',
-  },
+  tabButtonActive: { backgroundColor: '#4F6144' },
+  tabButtonText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  tabButtonTextActive: { color: '#fff' },
   filterChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    ...shadowStyle,
+    paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999,
+    backgroundColor: '#fff', ...shadowStyle,
   },
-  filterChipActive: {
-    backgroundColor: '#4F6144',
-  },
-  filterChipText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  filterChipTextActive: {
-    color: '#fff',
-  },
-
-  /* Scroll area */
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 96, // space for bottom nav
-  },
-
-  /* Section header */
+  filterChipActive: { backgroundColor: '#4F6144' },
+  filterChipText: { fontSize: 14, color: '#000' },
+  filterChipTextActive: { color: '#fff' },
+  scrollArea: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 96 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#161D1F',
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: '#5F5E5B',
-  },
-  viewAll: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewAllText: {
-    fontSize: 13,
-    color: '#4F6144',
-  },
-
-  /* Card list */
-  cardsList: {
-    gap: 16,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 48,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#4F6144',
-  },
-
-  /* Card */
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#161D1F' },
+  sectionSubtitle: { fontSize: 13, color: '#5F5E5B' },
+  viewAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewAllText: { fontSize: 13, color: '#4F6144' },
+  cardsList: { gap: 16 },
+  emptyState: { alignItems: 'center', paddingVertical: 48 },
+  emptyStateText: { fontSize: 14, color: '#4F6144' },
   card: {
     borderRadius: 12,
     borderWidth: 1,
@@ -495,81 +369,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadowStyle,
   },
-  cardImageWrapper: {
-    height: 176,
-    position: 'relative',
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-  },
+  cardImageWrapper: { height: 176, position: 'relative' },
+  cardImage: { width: '100%', height: '100%' },
   timerBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    position: 'absolute', top: 12, left: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#974135',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
   },
-  timerText: {
-    color: '#fff',
-    fontSize: 13,
-  },
+  timerText: { color: '#fff', fontSize: 13 },
   priceBadge: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    position: 'absolute', bottom: 12, right: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
   },
-  priceText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4F6144',
-  },
+  priceText: { fontSize: 11, fontWeight: '700', color: '#4F6144' },
   originalPriceText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#4F6144',
-    textDecorationLine: 'line-through',
+    fontSize: 8, fontWeight: '700', color: '#4F6144', textDecorationLine: 'line-through',
   },
-  cardBody: {
-    padding: 16,
-    gap: 6,
-  },
+  cardBody: { padding: 16, gap: 6 },
   cardTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  cardTitle: {
-    fontSize: 16,
-    color: '#161D1F',
-    flex: 1,
-    marginRight: 8,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  cardStore: {
-    fontSize: 13,
-    color: '#5F5E5B',
-  },
-  cardDistance: {
-    fontSize: 13,
-    color: '#5F5E5B',
-  },
+  cardTitle: { fontSize: 16, color: '#161D1F', flex: 1, marginRight: 8 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cardStore: { fontSize: 13, color: '#5F5E5B', flex: 1 },
+  cardDistance: { fontSize: 13, color: '#5F5E5B' },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -581,45 +409,22 @@ const styles = StyleSheet.create({
   categoryChip: {
     backgroundColor: 'rgba(79, 97, 68, 0.1)',
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 12, paddingVertical: 4,
   },
-  categoryChipText: {
-    fontSize: 13,
-    color: '#4F6144',
-  },
-
-  /* Bottom Nav */
+  categoryChipText: { fontSize: 13, color: '#4F6144' },
   bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 64,
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 24,
   },
-  bottomNavItem: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  bottomNavIcon: {
-    width: 28,
-    height: 28,
-  },
-  bottomNavLabel: {
-    fontSize: 10,
-    color: '#fff',
-  },
-
+  bottomNavItem: { alignItems: 'center', gap: 2 },
+  bottomNavIcon: { width: 28, height: 28 },
+  bottomNavLabel: { fontSize: 10, color: '#fff' },
   addToCartBtn: {
-  width: 26,
-  height: 26,
-  borderRadius: 13,
-  backgroundColor: '#324D3E',
-  alignItems: 'center',
-  justifyContent: 'center',
-},
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: '#324D3E',
+    alignItems: 'center', justifyContent: 'center',
+  },
 });

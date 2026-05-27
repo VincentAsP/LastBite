@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useFonts, Poppins_400Regular, Poppins_700Bold } from '@expo-google-fonts/poppins';
 import * as SplashScreen from 'expo-splash-screen';
 import { CartProvider } from '../context/CartContext';
+import { ToastProvider } from './Toastprovider';  
 
 SplashScreen.preventAutoHideAsync();
 
@@ -19,8 +20,10 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <CartProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </CartProvider>
+    <ToastProvider>                               
+      <CartProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </CartProvider>
+    </ToastProvider>                            
   );
 }
