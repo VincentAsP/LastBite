@@ -9,11 +9,67 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useCart } from '../context/CartContext';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCart, OrderType, OrderStatus } from '../context/CartContext';
+
+// === Konfigurasi step delivery (3 step) ===
+const DELIVERY_STEPS: {
+  key: OrderStatus;
+  title: string;
+  desc: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+}[] = [
+  {
+    key: 'preparing',
+    title: 'Preparing your order',
+    desc: 'The restaurant is preparing your food',
+    icon: 'chef-hat',
+  },
+  {
+    key: 'on_the_way',
+    title: 'On the way',
+    desc: 'Your courier is heading to your address',
+    icon: 'moped',
+  },
+  {
+    key: 'delivered',
+    title: 'Delivered',
+    desc: 'Enjoy your meal!',
+    icon: 'check-circle',
+  },
+];
+
+// === Konfigurasi step pickup (2 step saja) ===
+const PICKUP_STEPS: {
+  key: OrderStatus;
+  title: string;
+  desc: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+}[] = [
+  {
+    key: 'preparing',
+    title: 'Preparing your order',
+    desc: 'The restaurant is preparing your food',
+    icon: 'chef-hat',
+  },
+  {
+    key: 'ready',
+    title: 'Ready to pickup',
+    desc: 'Your order is ready at the counter',
+    icon: 'shopping-outline',
+  },
+];
 
 export default function FinishOrder() {
   const { items, orders, addOrder, clearCart } = useCart();
+
+  // Baca orderType dari params yang dikirim OrderSum saat checkout
+  const params = useLocalSearchParams<{ orderType?: OrderType }>();
+  const orderType: OrderType = params.orderType === 'pickup' ? 'pickup' : 'delivery';
+
+  // Status awal saat order baru di-place
+  // Nanti backend yang update via updateOrderStatus()
+  const currentStatus: OrderStatus = 'preparing';
 
   const orderId = useMemo(
     () => `LBT-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -27,9 +83,7 @@ export default function FinishOrder() {
     today.getMonth() + 1
   ).padStart(2, '0')}-${today.getFullYear()}`;
 
-  // Simpan order ke history sekali saat mount
   useEffect(() => {
-    // Cek biar gak duplikat kalau re-render
     const alreadySaved = orders.some((o) => o.orderId === orderId);
     if (!alreadySaved && items.length > 0) {
       addOrder({
@@ -37,11 +91,17 @@ export default function FinishOrder() {
         date: dateStr,
         items: [...items],
         total,
-        status: 'Completed',
+        status: currentStatus,
+        orderType,
       });
       clearCart();
     }
   }, []);
+
+  // Pilih step sesuai order type
+  const steps = orderType === 'delivery' ? DELIVERY_STEPS : PICKUP_STEPS;
+  const currentIndex = steps.findIndex((s) => s.key === currentStatus);
+  const isCompleted = currentIndex === steps.length - 1;
 
   return (
     <LinearGradient
@@ -52,20 +112,99 @@ export default function FinishOrder() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Success Card */}
         <View style={styles.successCard}>
           <View style={styles.iconOuter}>
             <View style={styles.iconInner}>
-              <Ionicons name="checkmark" size={44} color="#fff" />
+              <Ionicons
+                name={isCompleted ? 'checkmark' : 'time-outline'}
+                size={44}
+                color="#fff"
+              />
             </View>
           </View>
 
-          <Text style={styles.successTitle}>Order Placed!</Text>
+          <Text style={styles.successTitle}>
+            {isCompleted ? 'Order Completed!' : 'Order Placed!'}
+          </Text>
           <Text style={styles.successSubtitle}>
-            Your eco-rescue food has been reserved.{'\n'}
-            Thank you for reducing food waste! 🌱
+            {orderType === 'delivery'
+              ? 'Your order is being prepared.\nWe\'ll keep you posted on its progress 🚀'
+              : 'Your order is being prepared.\nWe\'ll let you know when it\'s ready 🌱'}
           </Text>
 
+          {/* Progress Timeline */}
+          <View style={styles.timelineBox}>
+            <Text style={styles.timelineHeading}>
+              {orderType === 'delivery' ? 'Delivery Progress' : 'Pickup Progress'}
+            </Text>
+
+            {steps.map((step, index) => {
+              const isActive = index === currentIndex;
+              const isDone = index < currentIndex;
+              const isPending = index > currentIndex;
+
+              return (
+                <View key={step.key} style={styles.stepRow}>
+                  <View style={styles.stepLeft}>
+                    <View
+                      style={[
+                        styles.stepIconBox,
+                        isDone && styles.stepIconBoxDone,
+                        isActive && styles.stepIconBoxActive,
+                        isPending && styles.stepIconBoxPending,
+                      ]}
+                    >
+                      {isDone ? (
+                        <Ionicons name="checkmark" size={16} color="#fff" />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name={step.icon}
+                          size={16}
+                          color={isActive ? '#fff' : '#A3B5A3'}
+                        />
+                      )}
+                    </View>
+
+                    {index < steps.length - 1 && (
+                      <View
+                        style={[
+                          styles.connector,
+                          (isDone || isActive) && styles.connectorActive,
+                        ]}
+                      />
+                    )}
+                  </View>
+
+                  <View style={styles.stepContent}>
+                    <Text
+                      style={[
+                        styles.stepTitle,
+                        isPending && styles.stepTitlePending,
+                      ]}
+                    >
+                      {step.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.stepDesc,
+                        isPending && styles.stepDescPending,
+                      ]}
+                    >
+                      {step.desc}
+                    </Text>
+                    {isActive && (
+                      <View style={styles.activeBadge}>
+                        <View style={styles.activeDot} />
+                        <Text style={styles.activeBadgeText}>In Progress</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Order details */}
           <View style={styles.detailsBox}>
             <View style={styles.detailRow}>
               <View style={styles.detailLabelRow}>
@@ -92,22 +231,22 @@ export default function FinishOrder() {
 
             <View style={styles.detailRow}>
               <View style={styles.detailLabelRow}>
-                <Ionicons name="bag-handle-outline" size={14} color="#7A8A7A" />
-                <Text style={styles.detailLabel}>Pickup</Text>
+                <Ionicons
+                  name={orderType === 'delivery' ? 'bicycle-outline' : 'bag-handle-outline'}
+                  size={14}
+                  color="#7A8A7A"
+                />
+                <Text style={styles.detailLabel}>
+                  {orderType === 'delivery' ? 'Delivery' : 'Pickup'}
+                </Text>
               </View>
-              <Text style={styles.detailValue}>Self-Pickup</Text>
+              <Text style={styles.detailValue}>
+                {orderType === 'delivery' ? 'Home Delivery' : 'Self-Pickup'}
+              </Text>
             </View>
-          </View>
-
-          <View style={styles.warningCard}>
-            <MaterialCommunityIcons name="clock-alert-outline" size={18} color="#B45309" />
-            <Text style={styles.warningText}>
-              Pick up before the store's countdown timer ends!
-            </Text>
           </View>
         </View>
 
-        {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Pressable
             style={styles.primaryButton}
@@ -137,33 +276,175 @@ const shadowStyle = Platform.select({
 
 const styles = StyleSheet.create({
   container: { flex: 1, maxWidth: 402, alignSelf: 'center', width: '100%' },
-  scrollContent: { paddingHorizontal: 24, paddingTop: 80, paddingBottom: 40, minHeight: '100%', justifyContent: 'space-between' },
-  successCard: { backgroundColor: '#fff', borderRadius: 28, padding: 28, alignItems: 'center', ...shadowStyle },
-  iconOuter: { width: 92, height: 92, borderRadius: 46, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center' },
-  iconInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#065F46', alignItems: 'center', justifyContent: 'center',
-    ...Platform.select({ ios: { shadowColor: '#065F46', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10 }, android: { elevation: 8 }, default: { boxShadow: '0 6px 10px 0 rgba(6,95,70,0.4)' } })
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    minHeight: '100%',
+    justifyContent: 'space-between',
   },
-  successTitle: { fontSize: 24, fontWeight: '700', color: '#324D3E', marginTop: 20, textAlign: 'center' },
-  successSubtitle: { fontSize: 13, color: '#5F6B5F', marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  detailsBox: { width: '100%', backgroundColor: '#F9FAF9', borderRadius: 16, padding: 16, marginTop: 24, gap: 12 },
+  successCard: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    padding: 24,
+    alignItems: 'center',
+    ...shadowStyle,
+  },
+  iconOuter: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#ECFDF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: '#065F46',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#065F46', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 10 },
+      android: { elevation: 8 },
+      default: { boxShadow: '0 6px 10px 0 rgba(6,95,70,0.4)' },
+    }),
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#324D3E',
+    marginTop: 18,
+    textAlign: 'center',
+  },
+  successSubtitle: {
+    fontSize: 13,
+    color: '#5F6B5F',
+    marginTop: 6,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
+  timelineBox: {
+    width: '100%',
+    backgroundColor: '#F9FAF9',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 24,
+  },
+  timelineHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#324D3E',
+    marginBottom: 14,
+  },
+  stepRow: { flexDirection: 'row', gap: 12 },
+  stepLeft: { alignItems: 'center', width: 28 },
+  stepIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepIconBoxDone: { backgroundColor: '#065F46' },
+  stepIconBoxActive: {
+    backgroundColor: '#324D3E',
+    ...Platform.select({
+      ios: { shadowColor: '#324D3E', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6 },
+      android: { elevation: 4 },
+      default: { boxShadow: '0 3px 6px 0 rgba(50,77,62,0.3)' },
+    }),
+  },
+  stepIconBoxPending: { backgroundColor: '#E5E7E5' },
+  connector: {
+    width: 2,
+    flex: 1,
+    minHeight: 22,
+    backgroundColor: '#E5E7E5',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  connectorActive: { backgroundColor: '#065F46' },
+  stepContent: { flex: 1, paddingBottom: 16 },
+  stepTitle: { fontSize: 13, fontWeight: '700', color: '#324D3E', marginBottom: 2 },
+  stepTitlePending: { color: '#A3B5A3', fontWeight: '600' },
+  stepDesc: { fontSize: 11, color: '#7A8A7A', lineHeight: 15 },
+  stepDescPending: { color: '#B5C4B5' },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    marginTop: 6,
+  },
+  activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#B45309' },
+  activeBadgeText: { fontSize: 10, fontWeight: '700', color: '#92400E', letterSpacing: 0.3 },
+
+  detailsBox: {
+    width: '100%',
+    backgroundColor: '#F9FAF9',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 12,
+    gap: 12,
+  },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   detailLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   detailLabel: { fontSize: 12, color: '#7A8A7A' },
   detailValue: { fontSize: 13, fontWeight: '600', color: '#324D3E' },
-  orderIdValue: { fontSize: 13, fontWeight: '700', color: '#324D3E',
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }), letterSpacing: 0.5
+  orderIdValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#324D3E',
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    letterSpacing: 0.5,
   },
-  dashedDivider: { height: 1, borderTopWidth: 1, borderTopColor: '#E5E7E5', borderStyle: 'dashed' },
-  paidBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  dashedDivider: {
+    height: 1,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7E5',
+    borderStyle: 'dashed',
+  },
+  paidBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
   paidDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#065F46' },
   paidText: { fontSize: 10, fontWeight: '700', color: '#065F46', letterSpacing: 0.5 },
-  warningCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FEF3C7', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginTop: 16, width: '100%' },
-  warningText: { flex: 1, fontSize: 11, color: '#92400E', lineHeight: 16 },
-  actionButtons: { gap: 10, marginTop: 28 },
-  primaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#324D3E', borderRadius: 14, paddingVertical: 16,
-    ...Platform.select({ ios: { shadowColor: '#324D3E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 }, android: { elevation: 6 }, default: { boxShadow: '0 8px 16px 0 rgba(50,77,62,0.3)' } })
+
+  actionButtons: { gap: 10, marginTop: 24 },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: '#324D3E',
+    borderRadius: 14,
+    paddingVertical: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#324D3E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 6 },
+      default: { boxShadow: '0 8px 16px 0 rgba(50,77,62,0.3)' },
+    }),
   },
   primaryButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  secondaryButton: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: 14, paddingVertical: 14 },
+  secondaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
   secondaryButtonText: { fontSize: 14, fontWeight: '600', color: '#324D3E' },
 });

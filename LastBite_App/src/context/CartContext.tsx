@@ -9,12 +9,27 @@ export interface CartItem {
   image: string;
 }
 
+// === Status order yang valid ===
+// In-progress: pesanan masih jalan
+// Terminal:    pesanan sudah selesai / dibatalkan
+export type OrderStatus =
+  | 'preparing'      // restoran sedang menyiapkan
+  | 'on_the_way'     // delivery: kurir di jalan
+  | 'delivered'      // delivery: sudah sampai
+  | 'ready'          // pickup: siap diambil
+  | 'picked_up'      // pickup: sudah diambil
+  | 'completed'      // selesai (alias terminal untuk delivered/picked_up)
+  | 'cancelled';     // dibatalkan
+
+export type OrderType = 'delivery' | 'pickup';
+
 export interface OrderRecord {
   orderId: string;
   date: string;
   items: CartItem[];
   total: number;
-  status: 'Completed' | 'Cancelled';
+  status: OrderStatus;
+  orderType?: OrderType; // optional: useful untuk filter di history
 }
 
 interface CartContextType {
@@ -25,6 +40,7 @@ interface CartContextType {
   totalCount: number;
   orders: OrderRecord[];
   addOrder: (order: OrderRecord) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   clearCart: () => void;
 }
 
@@ -66,11 +82,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setOrders((prev) => [order, ...prev]);
   };
 
+  // Helper untuk update status order (dipanggil saat status berubah dari backend)
+  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.orderId === orderId ? { ...o, status } : o))
+    );
+  };
+
   const totalCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <CartContext.Provider
-      value={{ items, addItem, increment, decrement, totalCount, orders, addOrder, clearCart }}
+      value={{
+        items,
+        addItem,
+        increment,
+        decrement,
+        totalCount,
+        orders,
+        addOrder,
+        updateOrderStatus,
+        clearCart,
+      }}
     >
       {children}
     </CartContext.Provider>

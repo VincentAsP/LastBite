@@ -189,9 +189,15 @@ export default function ChartPage() {
               </Text>
             </Pressable>
 
-            <Pressable style={styles.navItem}>
-              <Ionicons name="person-outline" size={18} color="#57534E" />
-              <Text style={styles.navItemText}>Profile</Text>
+            <Pressable
+                  style={styles.navItem}
+                  onPress={() => {
+                    setSidebarOpen(false);
+                    router.push('/profile');
+                  }}
+                >
+                  <Ionicons name="person-outline" size={18} color="#57534E" />
+                  <Text style={styles.navItemText}>Profile</Text>
             </Pressable>
 
             <Pressable style={styles.navItem}>

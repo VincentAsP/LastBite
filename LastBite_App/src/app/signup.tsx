@@ -7,11 +7,30 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+
+// === Error code mapping ===
+const REGISTER_ERRORS: Record<number, string> = {
+  400: 'Email sudah terdaftar',
+  500: 'Kesalahan internal server. Silakan coba lagi',
+};
+
+const LOGIN_ERRORS: Record<number, string> = {
+  400: 'Email dan password wajib diisi',
+  401: 'Email atau password salah',
+  500: 'Kesalahan pada server. Silakan coba lagi nanti',
+};
 
 export default function SignUp() {
   const [activeTab, setActiveTab] = useState<'signup' | 'signin'>('signup');
+  const [agreed, setAgreed] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -23,11 +42,92 @@ export default function SignUp() {
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (error) setError(null);
+  };
+
+  const handleTabChange = (tab: 'signup' | 'signin') => {
+    setActiveTab(tab);
+    setError(null);
+  };
+
+  const handleSignUp = async () => {
+    setError(null);
+
+    if (!agreed) {
+      setError('Please agree to Terms & Conditions first');
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Password and confirmation do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // TODO: ganti dengan real API call
+      // const res = await fetch('https://api.your-app.com/auth/register', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(form),
+      // });
+      //
+      // if (!res.ok) {
+      //   const msg = REGISTER_ERRORS[res.status] ?? 'Terjadi kesalahan. Coba lagi';
+      //   setError(msg);
+      //   return;
+      // }
+      //
+      // const data = await res.json();
+      // router.push({ pathname: '/otp-verify', params: { email: form.email } });
+
+      // === Dummy logic untuk testing UI ===
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Simulasi error 400 — hapus block ini saat backend ready
+      if (form.email === 'taken@gmail.com') {
+        setError(REGISTER_ERRORS[400]);
+        return;
+      }
+
+      console.log('Register success:', form);
+    } catch (e) {
+      setError(REGISTER_ERRORS[500]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignIn = async () => {
+    setError(null);
+
+    if (!form.email.trim() || !form.password.trim()) {
+      setError(LOGIN_ERRORS[400]);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await new Promise((r) => setTimeout(r, 800));
+
+      if (form.password === 'wrong') {
+        setError(LOGIN_ERRORS[401]);
+        return;
+      }
+
+      console.log('Login success:', { email: form.email });
+    } catch (e) {
+      setError(LOGIN_ERRORS[500]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = () => {
-    console.log('Form submitted:', form);
-    // TODO: validasi + kirim ke API
+    if (activeTab === 'signup') handleSignUp();
+    else handleSignIn();
   };
 
   return (
@@ -50,7 +150,7 @@ export default function SignUp() {
         {/* Tab Switcher */}
         <View style={styles.tabSwitcher}>
           <Pressable
-            onPress={() => setActiveTab('signup')}
+            onPress={() => handleTabChange('signup')}
             style={[
               styles.tabButton,
               activeTab === 'signup' && styles.tabButtonActive,
@@ -67,7 +167,7 @@ export default function SignUp() {
           </Pressable>
 
           <Pressable
-            onPress={() => setActiveTab('signin')}
+            onPress={() => handleTabChange('signin')}
             style={[
               styles.tabButton,
               activeTab === 'signin' && styles.tabButtonActive,
@@ -84,10 +184,17 @@ export default function SignUp() {
           </Pressable>
         </View>
 
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Form Sign Up */}
         {activeTab === 'signup' && (
           <View style={styles.form}>
-            {/* First & Last Name */}
             <View style={styles.row}>
               <View style={styles.halfField}>
                 <Text style={styles.label}>First Name</Text>
@@ -96,6 +203,7 @@ export default function SignUp() {
                   value={form.firstName}
                   onChangeText={(text) => handleChange('firstName', text)}
                   autoCapitalize="words"
+                  editable={!loading}
                 />
               </View>
               <View style={styles.halfField}>
@@ -105,11 +213,11 @@ export default function SignUp() {
                   value={form.lastName}
                   onChangeText={(text) => handleChange('lastName', text)}
                   autoCapitalize="words"
+                  editable={!loading}
                 />
               </View>
             </View>
 
-            {/* Email */}
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -120,10 +228,10 @@ export default function SignUp() {
                 placeholderTextColor="rgba(116, 139, 111, 0.4)"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!loading}
               />
             </View>
 
-            {/* Birth of Date */}
             <View style={styles.field}>
               <Text style={styles.label}>Birth of Date</Text>
               <TextInput
@@ -132,10 +240,10 @@ export default function SignUp() {
                 onChangeText={(text) => handleChange('birthDate', text)}
                 placeholder="DD/MM/YYYY"
                 placeholderTextColor="rgba(116, 139, 111, 0.4)"
+                editable={!loading}
               />
             </View>
 
-            {/* Set Password */}
             <View style={styles.field}>
               <Text style={styles.label}>Set Password</Text>
               <TextInput
@@ -143,10 +251,10 @@ export default function SignUp() {
                 value={form.password}
                 onChangeText={(text) => handleChange('password', text)}
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
-            {/* Confirm Password */}
             <View style={styles.field}>
               <Text style={styles.label}>Confirm Password</Text>
               <TextInput
@@ -154,13 +262,49 @@ export default function SignUp() {
                 value={form.confirmPassword}
                 onChangeText={(text) => handleChange('confirmPassword', text)}
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
-            {/* Submit Button */}
+            {/* Terms & Conditions */}
+            <Pressable
+              style={styles.termsRow}
+              onPress={() => setAgreed((v) => !v)}
+              disabled={loading}
+            >
+              <View
+                style={[styles.checkbox, agreed && styles.checkboxChecked]}
+              >
+                {agreed && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                I agree to the{' '}
+                <Text
+                  style={styles.termsLink}
+                  onPress={() => setShowTerms(true)}
+                >
+                  Terms & Conditions
+                </Text>
+                {' '}for customers and sellers
+              </Text>
+            </Pressable>
+
             <View style={styles.submitWrapper}>
-              <Pressable style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>Sign Up</Text>
+              <Pressable
+                style={[
+                  styles.submitButton,
+                  (!agreed || loading) && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={!agreed || loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#DAE6D8" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Sign Up</Text>
+                )}
               </Pressable>
             </View>
           </View>
@@ -169,7 +313,6 @@ export default function SignUp() {
         {/* Form Sign In */}
         {activeTab === 'signin' && (
           <View style={styles.form}>
-            {/* Email */}
             <View style={styles.field}>
               <Text style={styles.label}>Email</Text>
               <TextInput
@@ -180,10 +323,10 @@ export default function SignUp() {
                 placeholderTextColor="rgba(116, 139, 111, 0.4)"
                 keyboardType="email-address"
                 autoCapitalize="none"
+                editable={!loading}
               />
             </View>
 
-            {/* Password */}
             <View style={styles.field}>
               <Text style={styles.label}>Password</Text>
               <TextInput
@@ -191,18 +334,113 @@ export default function SignUp() {
                 value={form.password}
                 onChangeText={(text) => handleChange('password', text)}
                 secureTextEntry
+                editable={!loading}
               />
             </View>
 
-            {/* Submit Button */}
             <View style={styles.submitWrapper}>
-              <Pressable style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>Sign In</Text>
+              <Pressable
+                style={[
+                  styles.submitButton,
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#DAE6D8" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Sign In</Text>
+                )}
               </Pressable>
             </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Modal Terms & Conditions */}
+      <Modal
+        visible={showTerms}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowTerms(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Terms & Conditions</Text>
+              <Pressable
+                onPress={() => setShowTerms(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={20} color="#324D3E" />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.sectionHeading}>1. General</Text>
+              <Text style={styles.sectionBody}>
+                By creating an account, you agree to be bound by these Terms & Conditions.
+                You confirm that the information you provide is accurate and that you are
+                at least 17 years old.
+              </Text>
+
+              <Text style={styles.sectionHeading}>2. As a Customer</Text>
+              <Text style={styles.sectionBody}>
+                You agree to provide valid payment and delivery information, to follow the
+                ordering and cancellation policies, and not to misuse the platform for
+                fraudulent activity such as fake orders or chargeback abuse.
+              </Text>
+
+              <Text style={styles.sectionHeading}>3. As a Seller</Text>
+              <Text style={styles.sectionBody}>
+                If you choose to sell on this platform, you agree to provide accurate menu,
+                price, and stock information, to fulfill orders in a timely manner, and to
+                comply with all applicable food safety, hygiene, and tax regulations in
+                your area.
+              </Text>
+
+              <Text style={styles.sectionHeading}>4. Fees & Payments</Text>
+              <Text style={styles.sectionBody}>
+                A service fee may be deducted from each transaction. Payouts to sellers will
+                be processed according to the schedule stated in the seller dashboard.
+              </Text>
+
+              <Text style={styles.sectionHeading}>5. Account Suspension</Text>
+              <Text style={styles.sectionBody}>
+                We reserve the right to suspend or terminate accounts that violate these
+                terms, including fraud, harassment, or repeated negative reviews and
+                complaints.
+              </Text>
+
+              <Text style={styles.sectionHeading}>6. Privacy</Text>
+              <Text style={styles.sectionBody}>
+                Your data will be processed according to our Privacy Policy. We will never
+                sell your personal information to third parties.
+              </Text>
+
+              <Text style={styles.sectionHeading}>7. Changes</Text>
+              <Text style={styles.sectionBody}>
+                These terms may be updated from time to time. Continued use of the platform
+                after changes are published means you accept the updated terms.
+              </Text>
+            </ScrollView>
+
+            <Pressable
+              style={styles.modalAgreeButton}
+              onPress={() => {
+                setAgreed(true);
+                setShowTerms(false);
+              }}
+            >
+              <Text style={styles.modalAgreeText}>I Agree</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -218,7 +456,6 @@ const shadowStyle = Platform.select({
     elevation: 4,
   },
   default: {
-    // web fallback
     boxShadow: '0 4px 4px 0 rgba(0,0,0,0.25)',
   },
 });
@@ -254,7 +491,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 999,
     padding: 4,
-    marginBottom: 32,
+    marginBottom: 20,
     ...shadowStyle,
   },
   tabButton: {
@@ -274,6 +511,28 @@ const styles = StyleSheet.create({
   tabButtonTextActive: {
     color: '#DAE6D8',
   },
+
+  /* Error banner */
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEE2E2',
+    borderLeftWidth: 3,
+    borderLeftColor: '#DC2626',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B91C1C',
+    lineHeight: 16,
+  },
+
   form: {
     gap: 20,
   },
@@ -303,6 +562,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     ...shadowStyle,
   },
+
+  /* Terms */
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#324D3E',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: '#324D3E',
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#748B6F',
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontWeight: '700',
+    color: '#324D3E',
+    textDecorationLine: 'underline',
+  },
+
+  /* Submit */
   submitWrapper: {
     alignItems: 'center',
     marginTop: 8,
@@ -310,13 +605,84 @@ const styles = StyleSheet.create({
   submitButton: {
     paddingHorizontal: 32,
     paddingVertical: 10,
+    minWidth: 140,
     borderRadius: 999,
     backgroundColor: '#324D3E',
+    alignItems: 'center',
+    justifyContent: 'center',
     ...shadowStyle,
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
   },
   submitButtonText: {
     color: '#DAE6D8',
     fontSize: 14,
+    fontWeight: '700',
+  },
+
+  /* Modal */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 32,
+    maxHeight: '85%',
+    width: '100%',
+    maxWidth: 402,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#324D3E',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DAE6D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: {
+    marginBottom: 16,
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#324D3E',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  sectionBody: {
+    fontSize: 13,
+    color: '#5C6E5E',
+    lineHeight: 19,
+  },
+  modalAgreeButton: {
+    backgroundColor: '#324D3E',
+    borderRadius: 999,
+    paddingVertical: 14,
+    alignItems: 'center',
+    ...shadowStyle,
+  },
+  modalAgreeText: {
+    color: '#fff',
+    fontSize: 15,
     fontWeight: '700',
   },
 });

@@ -8,20 +8,74 @@ import {
   Image,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
+
+// === Error code mapping ===
+const ERROR_MESSAGES: Record<number, string> = {
+  400: 'Email dan password wajib diisi',
+  401: 'Email atau password salah',
+  500: 'Kesalahan pada server. Silakan coba lagi nanti',
+};
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    console.log('Login:', { email, password, rememberMe });
-    // TODO: validasi + API call nanti
+  const handleLogin = async () => {
+    setError(null);
+
+    // Client-side validation cepat — preempt 400
+    if (!email.trim() || !password.trim()) {
+      setError(ERROR_MESSAGES[400]);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // TODO: ganti dengan real API call ke backend
+      // Contoh struktur:
+      // const res = await fetch('https://api.your-app.com/auth/login', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email, password, rememberMe }),
+      // });
+      //
+      // if (!res.ok) {
+      //   const msg = ERROR_MESSAGES[res.status] ?? 'Terjadi kesalahan. Coba lagi';
+      //   setError(msg);
+      //   return;
+      // }
+      //
+      // const data = await res.json();
+      // // simpan token: AsyncStorage / SecureStore
+      // router.replace('/home');
+
+      // === Dummy logic untuk testing UI ===
+      await new Promise((r) => setTimeout(r, 800));
+
+      // Simulasi error 401 untuk testing — hapus block ini nanti
+      if (password === 'wrong') {
+        setError(ERROR_MESSAGES[401]);
+        return;
+      }
+
+      console.log('Login success:', { email, rememberMe });
+      router.replace('/home');
+    } catch (e) {
+      // Network error atau exception lain — perlakukan sebagai 500
+      setError(ERROR_MESSAGES[500]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,17 +104,29 @@ export default function LoginScreen() {
           Access your account to manage settings,{'\n'}explore features.
         </Text>
 
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={16} color="#B91C1C" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Email Field */}
         <View style={styles.field}>
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => {
+              setEmail(t);
+              if (error) setError(null); // clear error saat user mulai retry
+            }}
             placeholder="example@gmail.com"
             placeholderTextColor="rgba(116, 139, 111, 0.4)"
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={!loading}
           />
         </View>
 
@@ -71,10 +137,14 @@ export default function LoginScreen() {
             <TextInput
               style={styles.passwordInput}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(t) => {
+                setPassword(t);
+                if (error) setError(null);
+              }}
               placeholder="Enter your password here"
               placeholderTextColor="rgba(116, 139, 111, 0.4)"
               secureTextEntry={!showPassword}
+              editable={!loading}
             />
             <Pressable
               onPress={() => setShowPassword(!showPassword)}
@@ -112,27 +182,16 @@ export default function LoginScreen() {
         </View>
 
         {/* Get Started Button */}
-        <Pressable style={styles.primaryButton} onPress={handleLogin}>
-          <Text style={styles.primaryButtonText}>Get Started</Text>
-        </Pressable>
-
-        {/* Or Divider */}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>Or</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Sign in with Google */}
-        <Pressable style={styles.socialButton}>
-          <Ionicons name="logo-google" size={20} color="#fff" />
-          <Text style={styles.socialButtonText}>Sign in with Google</Text>
-        </Pressable>
-
-        {/* Continue with Apple */}
-        <Pressable style={styles.socialButton}>
-          <Ionicons name="logo-apple" size={20} color="#fff" />
-          <Text style={styles.socialButtonText}>Continue with Apple</Text>
+        <Pressable
+          style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Get Started</Text>
+          )}
         </Pressable>
 
         {/* Sign up link */}
@@ -194,8 +253,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#748B6F',
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
+
+  /* Error banner */
+  errorBanner: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEE2E2',
+    borderLeftWidth: 3,
+    borderLeftColor: '#DC2626',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B91C1C',
+    lineHeight: 16,
+  },
+
   field: {
     width: '100%',
     marginBottom: 12,
@@ -286,41 +368,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     ...shadowStyle,
   },
+  primaryButtonDisabled: {
+    opacity: 0.6,
+  },
   primaryButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  dividerRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#748B6F',
-  },
-  dividerText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#748B6F',
-  },
-  socialButton: {
-    width: 264,
-    height: 32,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#324D3E',
-    borderRadius: 999,
-    paddingLeft: 32,
-    marginBottom: 12,
-    ...shadowStyle,
-  },
-  socialButtonText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',

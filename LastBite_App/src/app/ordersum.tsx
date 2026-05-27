@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -15,10 +16,15 @@ const ITEM_IMG = 'https://api.builder.io/api/v1/image/assets/TEMP/f45a1f3e410b2e
 
 const formatPrice = (amount: number) => amount.toLocaleString('id-ID');
 
+type OrderType = 'delivery' | 'pickup';
+
 export default function OrderSum() {
+  const [orderType, setOrderType] = useState<OrderType>('delivery');
+
   const subtotal = 60000;
-  const tax = 6000;
-  const total = 66000;
+  const tax = Math.round(subtotal * 0.1);
+  const deliveryFee = orderType === 'delivery' ? 10000 : 0;
+  const total = subtotal + tax + deliveryFee;
 
   return (
     <LinearGradient
@@ -39,7 +45,6 @@ export default function OrderSum() {
           </Pressable>
           <Text style={styles.headerTitle}>Order Summary</Text>
           <View style={{ width: 40 }} />
-          {/* spacer untuk center title */}
         </View>
 
         {/* Restaurant Card */}
@@ -55,6 +60,53 @@ export default function OrderSum() {
             <Text style={styles.restaurantLabel}>Ordering from</Text>
             <Text style={styles.restaurantName}>Ayam Penyet Lala</Text>
           </View>
+        </View>
+
+        {/* Order Type Toggle */}
+        <View style={styles.orderTypeToggle}>
+          <Pressable
+            style={[
+              styles.toggleOption,
+              orderType === 'delivery' && styles.toggleOptionActive,
+            ]}
+            onPress={() => setOrderType('delivery')}
+          >
+            <MaterialCommunityIcons
+              name="moped"
+              size={18}
+              color={orderType === 'delivery' ? '#fff' : '#324D3E'}
+            />
+            <Text
+              style={[
+                styles.toggleText,
+                orderType === 'delivery' && styles.toggleTextActive,
+              ]}
+            >
+              Delivery
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.toggleOption,
+              orderType === 'pickup' && styles.toggleOptionActive,
+            ]}
+            onPress={() => setOrderType('pickup')}
+          >
+            <MaterialCommunityIcons
+              name="shopping-outline"
+              size={18}
+              color={orderType === 'pickup' ? '#fff' : '#324D3E'}
+            />
+            <Text
+              style={[
+                styles.toggleText,
+                orderType === 'pickup' && styles.toggleTextActive,
+              ]}
+            >
+              Self Pickup
+            </Text>
+          </Pressable>
         </View>
 
         {/* Section Header: Your Order */}
@@ -95,6 +147,13 @@ export default function OrderSum() {
             <Text style={styles.priceValue}>Rp{formatPrice(tax)}</Text>
           </View>
 
+          {orderType === 'delivery' && (
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Delivery Fee</Text>
+              <Text style={styles.priceValue}>Rp{formatPrice(deliveryFee)}</Text>
+            </View>
+          )}
+
           <View style={styles.divider} />
 
           <View style={styles.priceRow}>
@@ -103,19 +162,34 @@ export default function OrderSum() {
           </View>
         </View>
 
-        {/* Address Card */}
-        <View style={styles.addressCard}>
-          <View style={styles.addressIconBox}>
-            <Ionicons name="location" size={18} color="#fff" />
+        {/* Address Card / Pickup Info — conditional */}
+        {orderType === 'delivery' ? (
+          <View style={styles.addressCard}>
+            <View style={styles.addressIconBox}>
+              <Ionicons name="location" size={18} color="#fff" />
+            </View>
+            <View style={styles.addressInfo}>
+              <Text style={styles.addressLabel}>Delivery Address</Text>
+              <Text style={styles.addressValue}>Slateford Road, Edinburgh</Text>
+            </View>
+            <Pressable onPress={() => router.push('/adresses')}>
+              <Text style={styles.changeText}>Change</Text>
+            </Pressable>
           </View>
-          <View style={styles.addressInfo}>
-            <Text style={styles.addressLabel}>Delivery Address</Text>
-            <Text style={styles.addressValue}>Slateford Road, Edinburgh</Text>
+        ) : (
+          <View style={styles.addressCard}>
+            <View style={[styles.addressIconBox, { backgroundColor: '#324D3E' }]}>
+              <MaterialCommunityIcons name="storefront-outline" size={18} color="#fff" />
+            </View>
+            <View style={styles.addressInfo}>
+              <Text style={styles.addressLabel}>Pickup at</Text>
+              <Text style={styles.addressValue}>Ayam Penyet Lala — Main Branch</Text>
+            </View>
+            <Pressable>
+              <Text style={styles.changeText}>Details</Text>
+            </Pressable>
           </View>
-          <Pressable>
-            <Text style={styles.changeText}>Change</Text>
-          </Pressable>
-        </View>
+        )}
 
         {/* Payment Detail Card */}
         <View style={styles.paymentCard}>
@@ -144,7 +218,12 @@ export default function OrderSum() {
         {/* Proceed Order Button */}
         <Pressable
           style={styles.proceedButton}
-          onPress={() => router.push('/finishorder' as any)}
+          onPress={() =>
+            router.push({
+              pathname: '/finishorder' as any,
+              params: { orderType },
+            })
+          }
         >
           <Text style={styles.proceedText}>Proceed Order</Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
@@ -212,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     gap: 14,
-    marginBottom: 24,
+    marginBottom: 16,
     ...shadowStyle,
   },
   restaurantIconBox: {
@@ -235,6 +314,46 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#324D3E',
+  },
+
+  /* Order Type Toggle */
+  orderTypeToggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 24,
+    gap: 4,
+  },
+  toggleOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  toggleOptionActive: {
+    backgroundColor: '#324D3E',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#324D3E',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+      default: { boxShadow: '0 4px 6px 0 rgba(50,77,62,0.25)' },
+    }),
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#324D3E',
+  },
+  toggleTextActive: {
+    color: '#fff',
   },
 
   /* Section Header */
