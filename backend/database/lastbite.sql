@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 25 Bulan Mei 2026 pada 09.23
+-- Waktu pembuatan: 28 Bulan Mei 2026 pada 15.00
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -43,8 +43,20 @@ CREATE TABLE `delivery` (
   `deliverID` int(11) NOT NULL,
   `orderID` int(11) NOT NULL,
   `method` varchar(50) NOT NULL,
+  `shipping_status` varchar(50) DEFAULT 'Pending',
   `address` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `delivery`
+--
+
+INSERT INTO `delivery` (`deliverID`, `orderID`, `method`, `shipping_status`, `address`) VALUES
+(1, 2, 'Delivery', 'Pending', 'Jl. Mawar No. 123, Bandung'),
+(2, 3, 'Delivery', 'Pending', 'Jl. Mawar No. 123, Bandung'),
+(3, 4, 'Delivery', 'Pending', 'Jl. Mawar No. 123, Bandung'),
+(4, 5, 'Delivery', 'Pending', 'Jl. Mawar No. 123, Bandung'),
+(5, 6, 'Delivery', 'Pending', 'Jl. Mawar No. 123, Bandung');
 
 -- --------------------------------------------------------
 
@@ -59,6 +71,17 @@ CREATE TABLE `order` (
   `total_price` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `order`
+--
+
+INSERT INTO `order` (`orderID`, `userID`, `status`, `total_price`) VALUES
+(2, 1, 'pending', 35000.00),
+(3, 1, 'pending', 35000.00),
+(4, 1, 'pending', 35000.00),
+(5, 1, 'pending', 35000.00),
+(6, 1, 'pending', 35000.00);
+
 -- --------------------------------------------------------
 
 --
@@ -72,6 +95,17 @@ CREATE TABLE `order_item` (
   `quantity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data untuk tabel `order_item`
+--
+
+INSERT INTO `order_item` (`orderItemID`, `orderID`, `productID`, `quantity`) VALUES
+(1, 2, 1, 1),
+(2, 3, 1, 1),
+(3, 4, 1, 1),
+(4, 5, 1, 1),
+(5, 6, 1, 1);
+
 -- --------------------------------------------------------
 
 --
@@ -82,11 +116,30 @@ CREATE TABLE `product` (
   `productID` int(11) NOT NULL,
   `sellerID` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
+  `image` varchar(255) DEFAULT 'default_food.png',
   `category` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
   `stock` int(11) NOT NULL DEFAULT 0,
   `status` varchar(50) DEFAULT 'available',
   `expiryTime` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `product`
+--
+
+INSERT INTO `product` (`productID`, `sellerID`, `name`, `image`, `category`, `description`, `stock`, `status`, `expiryTime`) VALUES
+(1, 101, 'Bakery Surprise Box', 'default_food.png', 'Bakery', '3-4 pieces of sweet and savory pastries from today\'s display. Quality guaranteed!', 20, 'active', '2027-12-31 21:00:00'),
+(2, 101, 'Sourdough & Baguette', 'default_food.png', 'Bakery', 'Artisan bread bundle. Perfect for tomorrow\'s breakfast.', 3, 'active', '2027-12-31 22:00:00'),
+(3, 102, 'Vegan Starter Pack', 'default_food.png', 'Vegan', 'A mystery box containing 2 plant-based meals (salad or wrap). 100% cruelty-free.', 4, 'active', '2027-12-31 20:00:00'),
+(4, 103, 'Dairy Rescue Bundle', 'default_food.png', 'Dairy', 'Fresh milk and yogurt nearing their optimal selling limit. Refrigerate immediately!', 6, 'active', '2027-12-31 18:00:00'),
+(5, 104, 'Sushi Roll Roulette', 'default_food.png', 'Seafood', 'Contains 2 portions of cooked/baked sushi rolls. No raw sashimi for safety reasons.', 2, 'active', '2027-12-31 21:30:00'),
+(6, 105, 'Indonesian Comfort Box', 'default_food.png', 'Local', 'A surprise mix of traditional Indonesian dishes and rice. Big portions, great taste!', 10, 'active', '2027-12-31 19:00:00'),
+(7, 106, 'Midnight Sugar Rush', 'default_food.png', 'Dessert', 'Today\'s surplus of premium cupcakes or cake slices. Perfect for your late-night cravings.', 3, 'active', '2027-12-31 23:00:00'),
+(8, 107, 'Healthy Bowl Surplus', 'default_food.png', 'Vegan', 'Organic veggies, dressings, and plant-based proteins. Stay healthy on a budget.', 5, 'active', '2027-12-31 20:30:00'),
+(9, 108, 'Pasta Fresca Box', 'default_food.png', 'Italian', 'Authentic Italian pasta surplus. Just heat it up in the microwave and enjoy!', 4, 'active', '2027-12-31 21:00:00'),
+(10, 109, 'Spicy Challenge Box', 'default_food.png', 'Spicy', 'Random spicy chicken meals with surprise heat levels. Dare to try?', 8, 'active', '2027-12-31 22:00:00'),
+(11, 110, 'Pastry & Brew Box', 'default_food.png', 'Beverage', '1 liter of milk coffee + 2 pastries that missed the aesthetic check but still taste amazing.', 7, 'active', '2027-12-31 23:59:00');
 
 -- --------------------------------------------------------
 
@@ -98,7 +151,8 @@ CREATE TABLE `report` (
   `reportID` int(11) NOT NULL,
   `userID` int(11) NOT NULL,
   `sellerID` int(11) NOT NULL,
-  `description` text NOT NULL
+  `description` text NOT NULL,
+  `image` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -155,7 +209,18 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`userID`, `roleID`, `full_name`, `birth_date`, `password`, `address`, `created_at`, `email`) VALUES
-(99, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com');
+(1, 1, 'Budi Beli', '2002-10-15', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Jl. Mawar No. 123, Bandung', '2026-05-28 12:54:49', 'budi@gmail.com'),
+(99, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com'),
+(101, 2, 'Majesty Bakery', '2010-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Sudirman Street No. 1', '2026-05-28 11:42:18', 'hello@majesty.com'),
+(102, 2, 'Vegan Vibe', '2015-05-12', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Kemang Raya Avenue 12', '2026-05-28 11:42:18', 'admin@veganvibe.com'),
+(103, 2, 'Moo Moo Dairy', '2018-03-22', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Asia Afrika Street', '2026-05-28 11:42:18', 'moo@dairy.com'),
+(104, 2, 'Sushi Surplus', '2012-11-10', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'PIK Avenue Boulevard', '2026-05-28 11:42:18', 'info@sushisurplus.com'),
+(105, 2, 'Archipelago Eats', '2005-08-17', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Gatot Subroto Street', '2026-05-28 11:42:18', 'admin@archipelago.com'),
+(106, 2, 'Sweet Tooth Dessert', '2020-02-14', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Grand Indonesia Mall', '2026-05-28 11:42:18', 'sweet@tooth.com'),
+(107, 2, 'Green Bowl Salad', '2019-07-07', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Senopati Street No 8', '2026-05-28 11:42:18', 'green@bowl.com'),
+(108, 2, 'Pasta La Vista', '2014-10-31', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Braga Street', '2026-05-28 11:42:18', 'pasta@vista.com'),
+(109, 2, 'Spicy Bites', '2016-09-09', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Campus Square', '2026-05-28 11:42:18', 'hello@spicybites.com'),
+(110, 2, 'Twilight Roasters', '2021-04-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Canggu, Bali', '2026-05-28 11:42:18', 'hello@twilightroasters.com');
 
 --
 -- Indexes for dumped tables
@@ -240,25 +305,25 @@ ALTER TABLE `dashboard`
 -- AUTO_INCREMENT untuk tabel `delivery`
 --
 ALTER TABLE `delivery`
-  MODIFY `deliverID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `deliverID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT untuk tabel `order`
 --
 ALTER TABLE `order`
-  MODIFY `orderID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `orderID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT untuk tabel `order_item`
 --
 ALTER TABLE `order_item`
-  MODIFY `orderItemID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `orderItemID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT untuk tabel `product`
 --
 ALTER TABLE `product`
-  MODIFY `productID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `productID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT untuk tabel `report`
@@ -282,7 +347,7 @@ ALTER TABLE `timer`
 -- AUTO_INCREMENT untuk tabel `user`
 --
 ALTER TABLE `user`
-  MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=100;
+  MODIFY `userID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
 
 --
 -- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)

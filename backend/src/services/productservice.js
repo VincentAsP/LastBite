@@ -1,4 +1,4 @@
-const productModel = require('../models/productModel');
+const productModel = require('../models/productmodels');
 
 const fetchNearbyProducts = async (lat, lng, radius) => {
     // 1. Logika Validasi: Pastikan lat dan lng ada
