@@ -7,6 +7,8 @@ const path = require('path');
 const authRoutes = require('./src/routes/authroutes');
 const productRoutes = require('./src/routes/productroutes');
 const orderRoutes = require('./src/routes/orderroutes');
+const impactRoutes = require('./src/routes/impactroutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 const { startCronJobs } = require('./src/utils/cron')
 
 const app = express();
@@ -23,6 +25,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/impact', impactRoutes);
+app.use('/api/report', reportRoutes);
+
  
 
 startCronJobs();

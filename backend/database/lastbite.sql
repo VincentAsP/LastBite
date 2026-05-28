@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 28 Bulan Mei 2026 pada 17.00
+-- Waktu pembuatan: 28 Bulan Mei 2026 pada 17.54
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -119,10 +119,14 @@ INSERT INTO `product` (`productID`, `sellerID`, `name`, `image`, `category`, `de
 
 CREATE TABLE `report` (
   `reportID` int(11) NOT NULL,
+  `orderID` int(11) DEFAULT NULL,
   `userID` int(11) NOT NULL,
   `sellerID` int(11) NOT NULL,
+  `issue_type` varchar(50) DEFAULT NULL,
   `description` text NOT NULL,
-  `image` varchar(255) DEFAULT NULL
+  `image_path` varchar(255) DEFAULT NULL,
+  `status` enum('pending','resolved') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -172,6 +176,7 @@ CREATE TABLE `user` (
   `address` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `email` varchar(255) NOT NULL,
+  `status` enum('active','suspended') DEFAULT 'active',
   `fcm_token` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -179,19 +184,19 @@ CREATE TABLE `user` (
 -- Dumping data untuk tabel `user`
 --
 
-INSERT INTO `user` (`userID`, `roleID`, `full_name`, `birth_date`, `password`, `address`, `created_at`, `email`, `fcm_token`) VALUES
-(1, 1, 'Budi Beli', '2002-10-15', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Jl. Mawar No. 123, Bandung', '2026-05-28 12:54:49', 'budi@gmail.com', NULL),
-(99, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com', NULL),
-(101, 2, 'Majesty Bakery', '2010-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Sudirman Street No. 1', '2026-05-28 11:42:18', 'hello@majesty.com', NULL),
-(102, 2, 'Vegan Vibe', '2015-05-12', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Kemang Raya Avenue 12', '2026-05-28 11:42:18', 'admin@veganvibe.com', NULL),
-(103, 2, 'Moo Moo Dairy', '2018-03-22', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Asia Afrika Street', '2026-05-28 11:42:18', 'moo@dairy.com', NULL),
-(104, 2, 'Sushi Surplus', '2012-11-10', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'PIK Avenue Boulevard', '2026-05-28 11:42:18', 'info@sushisurplus.com', NULL),
-(105, 2, 'Archipelago Eats', '2005-08-17', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Gatot Subroto Street', '2026-05-28 11:42:18', 'admin@archipelago.com', NULL),
-(106, 2, 'Sweet Tooth Dessert', '2020-02-14', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Grand Indonesia Mall', '2026-05-28 11:42:18', 'sweet@tooth.com', NULL),
-(107, 2, 'Green Bowl Salad', '2019-07-07', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Senopati Street No 8', '2026-05-28 11:42:18', 'green@bowl.com', NULL),
-(108, 2, 'Pasta La Vista', '2014-10-31', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Braga Street', '2026-05-28 11:42:18', 'pasta@vista.com', NULL),
-(109, 2, 'Spicy Bites', '2016-09-09', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Campus Square', '2026-05-28 11:42:18', 'hello@spicybites.com', NULL),
-(110, 2, 'Twilight Roasters', '2021-04-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Canggu, Bali', '2026-05-28 11:42:18', 'hello@twilightroasters.com', NULL);
+INSERT INTO `user` (`userID`, `roleID`, `full_name`, `birth_date`, `password`, `address`, `created_at`, `email`, `status`, `fcm_token`) VALUES
+(1, 1, 'Budi Beli', '2002-10-15', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Jl. Mawar No. 123, Bandung', '2026-05-28 12:54:49', 'budi@gmail.com', 'active', NULL),
+(99, 3, 'Admin LastBite', '2000-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'LastBite', '2026-05-19 16:36:44', 'admin@lastbite.com', 'active', NULL),
+(101, 2, 'Majesty Bakery', '2010-01-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Sudirman Street No. 1', '2026-05-28 11:42:18', 'hello@majesty.com', 'active', NULL),
+(102, 2, 'Vegan Vibe', '2015-05-12', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Kemang Raya Avenue 12', '2026-05-28 11:42:18', 'admin@veganvibe.com', 'active', NULL),
+(103, 2, 'Moo Moo Dairy', '2018-03-22', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Asia Afrika Street', '2026-05-28 11:42:18', 'moo@dairy.com', 'active', NULL),
+(104, 2, 'Sushi Surplus', '2012-11-10', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'PIK Avenue Boulevard', '2026-05-28 11:42:18', 'info@sushisurplus.com', 'active', NULL),
+(105, 2, 'Archipelago Eats', '2005-08-17', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Gatot Subroto Street', '2026-05-28 11:42:18', 'admin@archipelago.com', 'active', NULL),
+(106, 2, 'Sweet Tooth Dessert', '2020-02-14', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Grand Indonesia Mall', '2026-05-28 11:42:18', 'sweet@tooth.com', 'active', NULL),
+(107, 2, 'Green Bowl Salad', '2019-07-07', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Senopati Street No 8', '2026-05-28 11:42:18', 'green@bowl.com', 'active', NULL),
+(108, 2, 'Pasta La Vista', '2014-10-31', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Braga Street', '2026-05-28 11:42:18', 'pasta@vista.com', 'active', NULL),
+(109, 2, 'Spicy Bites', '2016-09-09', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Campus Square', '2026-05-28 11:42:18', 'hello@spicybites.com', 'active', NULL),
+(110, 2, 'Twilight Roasters', '2021-04-01', '$2b$10$R9h/cIP5b9WnVGLS67WhFeXg8Kj3K6N/zWdfM2B7tG2Nl7qH6A6by', 'Canggu, Bali', '2026-05-28 11:42:18', 'hello@twilightroasters.com', 'active', NULL);
 
 --
 -- Indexes for dumped tables
@@ -239,7 +244,8 @@ ALTER TABLE `product`
 ALTER TABLE `report`
   ADD PRIMARY KEY (`reportID`),
   ADD KEY `userID` (`userID`),
-  ADD KEY `sellerID` (`sellerID`);
+  ADD KEY `sellerID` (`sellerID`),
+  ADD KEY `report_ibfk_3` (`orderID`);
 
 --
 -- Indeks untuk tabel `role`
@@ -360,7 +366,8 @@ ALTER TABLE `product`
 --
 ALTER TABLE `report`
   ADD CONSTRAINT `report_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `user` (`userID`),
-  ADD CONSTRAINT `report_ibfk_2` FOREIGN KEY (`sellerID`) REFERENCES `user` (`userID`);
+  ADD CONSTRAINT `report_ibfk_2` FOREIGN KEY (`sellerID`) REFERENCES `user` (`userID`),
+  ADD CONSTRAINT `report_ibfk_3` FOREIGN KEY (`orderID`) REFERENCES `order` (`orderID`) ON DELETE SET NULL;
 
 --
 -- Ketidakleluasaan untuk tabel `timer`
