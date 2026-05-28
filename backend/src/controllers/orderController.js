@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const midtransClient = require('midtrans-client');
-
+const { sendPushNotification } = require('../utils/notification');
 
 const snap = new midtransClient.Snap({
     isProduction: false,
@@ -141,6 +141,21 @@ async function confirmPayment(req, res) {
         const deliveryMethod = delivCheck[0].method;
 
         await pool.query("UPDATE `order` SET status = 'paid' WHERE orderID = ?", [orderID]);
+
+        // Kirim notifikasi ke user
+                const [userToken] = await pool.query(
+                    'SELECT u.fcm_token FROM user u JOIN `order` o ON u.userID = o.userID WHERE o.orderID = ?', 
+                    [orderID]
+                );
+                
+                if (userToken.length > 0 && userToken[0].fcm_token) {
+                    await sendPushNotification(
+                        userToken[0].fcm_token, 
+                        "Payment Secured!", 
+                        "Your order is confirmed. Our courier is warming up the engine!"
+                    );
+                }
+
         res.status(200).json({ message: "Pembayaran Sukses! Kurir meluncur." });
 
         // Logika Kurir
@@ -158,6 +173,21 @@ async function confirmPayment(req, res) {
             setTimeout(async () => {
                 await pool.query("UPDATE delivery SET shipping_status = 'Delivered' WHERE orderID = ?", [orderID]);
                 await pool.query("UPDATE `order` SET status = 'completed' WHERE orderID = ?", [orderID]);
+
+                // Kirim notifikasi ke user
+                const [userToken] = await pool.query(
+                    'SELECT u.fcm_token FROM user u JOIN `order` o ON u.userID = o.userID WHERE o.orderID = ?', 
+                    [orderID]
+                );
+                
+                if (userToken.length > 0 && userToken[0].fcm_token) {
+                    await sendPushNotification(
+                        userToken[0].fcm_token, 
+                        "Your Mystery Box is Here!", 
+                        "The courier has arrived. Time to rescue your food and enjoy!"
+                    );
+                }
+
                 console.log(`[Order ${orderID}]: Pengiriman selesai!`);
             }, 15000);
 
