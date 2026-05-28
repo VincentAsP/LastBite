@@ -175,4 +175,49 @@ async function confirmPayment(req, res) {
     }
 }
 
-module.exports = { checkoutOrder, confirmPayment };
+// API GENERATE INVOICE
+async function getInvoice(req, res) {
+    const { orderID } = req.params;
+
+    if (!orderID) return res.status(400).json({ message: "OrderID tidak boleh kosong!" });
+
+    try {
+        const orderQuery = `
+            SELECT o.orderID, o.status AS order_status, o.total_price, 
+                   d.method AS delivery_method, d.address, d.shipping_status
+            FROM \`order\` o
+            JOIN delivery d ON o.orderID = d.orderID
+            WHERE o.orderID = ?
+        `;
+        const [orderData] = await pool.query(orderQuery, [orderID]);
+
+        if (orderData.length === 0) {
+            return res.status(404).json({ message: "Pesanan tidak ditemukan!" });
+        }
+
+        const itemsQuery = `
+            SELECT oi.quantity, p.name, p.category 
+            FROM order_item oi
+            JOIN product p ON oi.productID = p.productID
+            WHERE oi.orderID = ?
+        `;
+        const [itemsData] = await pool.query(itemsQuery, [orderID]);
+
+        const invoice = {
+            invoice_id: `INV-LASTBITE-${orderID}`,
+            details: orderData[0],
+            items: itemsData
+        };
+
+        res.status(200).json({
+            message: "Invoice berhasil di-generate!",
+            data: invoice
+        });
+
+    } catch (error) {
+        console.error("Gagal generate invoice:", error);
+        res.status(500).json({ message: "Server error saat mengambil data invoice." });
+    }
+}
+
+module.exports = { checkoutOrder, confirmPayment, getInvoice };
