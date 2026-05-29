@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 28 Bulan Mei 2026 pada 17.54
+-- Waktu pembuatan: 29 Bulan Mei 2026 pada 04.38
 -- Versi server: 10.4.32-MariaDB
 -- Versi PHP: 8.2.12
 
@@ -176,7 +176,7 @@ CREATE TABLE `user` (
   `address` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `email` varchar(255) NOT NULL,
-  `status` enum('active','suspended') DEFAULT 'active',
+  `status` enum('active','suspended','deleted') DEFAULT 'active',
   `fcm_token` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

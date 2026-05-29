@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
+const { deleteAccount } = require('../controllers/userController');
 
-// URL: GET /api/products/nearby?lat=...&lng=...
 router.get('/nearby', productController.getProductsByGeolocation);
+router.delete('/delete/:userID', deleteAccount);
 
 module.exports = router;

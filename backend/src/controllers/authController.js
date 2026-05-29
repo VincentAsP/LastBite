@@ -51,6 +51,10 @@ const login = async (req, res) => {
             return res.status(401).json({ message: 'Email atau password salah!' });
         }
 
+        if (users[0].status === 'deleted') {
+            return res.status(403).json({ message: 'Akun tidak ditemukan.' });
+        }
+
         const user = users[0];
         const validPassword = await bcrypt.compare(password, user.password);
 
