@@ -23,6 +23,9 @@ export interface ExpoProcessEnv {
   /** Build-time representation of the `Platform.OS` value that the current JavaScript was bundled for. Does not support platform shaking wrapped require statements. */
   EXPO_OS?: string;
 
+  /** Run-time representation of the `Platform.OS` for the top-most platform that's hosting the DOM component. Only defined in DOM components, undefined in standard runtimes and on web. */
+  EXPO_DOM_HOST_OS?: 'ios' | 'android' | (string & {});
+
   [key: string]: any;
 }
 
@@ -97,6 +100,12 @@ declare namespace ExpoGlobal {
    * Reloads the app.
    */
   export function reloadAppAsync(reason: string): Promise<void>;
+
+  /**
+   * Installs Expo Modules inside the Reanimated UI worklet runtime.
+   * @platform android
+   */
+  export function installOnUIRuntime(): void;
 }
 
 /* eslint-disable no-var */

@@ -5,7 +5,7 @@ internal enum EventObservingType: String {
   case stopObserving
 }
 
-internal protocol AnyEventObservingDefinition: AnyDefinition {
+internal protocol AnyEventObservingDefinition: AnyDefinition, Sendable {
   var event: String? { get }
 
   var type: EventObservingType { get }
@@ -13,7 +13,7 @@ internal protocol AnyEventObservingDefinition: AnyDefinition {
   func call()
 }
 
-public final class EventObservingDefinition: AnyEventObservingDefinition {
+public final class EventObservingDefinition: AnyEventObservingDefinition, @unchecked Sendable {
   public typealias ClosureType = () -> Void
 
   let type: EventObservingType
@@ -40,6 +40,7 @@ public struct EventObservingDecorator: JavaScriptObjectDecorator {
    Decorates the given object with `startObserving` and `stopObserving` functions.
    These functions are automatically called by the `EventEmitter` implementation.
    */
+  @JavaScriptActor
   func decorate(object: JavaScriptObject, appContext: AppContext) throws {
     // We need to keep track the number of observed events
     // so we can call observers not attached to any event in the right moment.

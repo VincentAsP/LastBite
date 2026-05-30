@@ -21,7 +21,7 @@ private let defaultQueue = DispatchQueue(label: "expo.modules.AsyncFunctionQueue
 /**
  Represents a function that can only be called asynchronously, thus its JavaScript equivalent returns a Promise.
  */
-public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyAsyncFunctionDefinition {
+public class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyAsyncFunctionDefinition, @unchecked Sendable {
   typealias ClosureType = (Args) throws -> ReturnType
 
   /**
@@ -63,7 +63,12 @@ public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyA
 
   var takesOwner: Bool = false
 
-  func call(by owner: AnyObject?, withArguments args: [Any], appContext: AppContext, callback: @escaping (FunctionCallResult) -> ()) {
+  func call(
+    by owner: AnyObject?,
+    withArguments args: [Any],
+    appContext: AppContext,
+    callback: @Sendable @escaping (FunctionCallResult) -> Void
+  ) {
     let promise = Promise(appContext: appContext) { value in
       callback(.success(Conversions.convertFunctionResult(value, appContext: appContext, dynamicType: ~ReturnType.self)))
     } rejecter: { exception in
@@ -133,7 +138,6 @@ public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyA
     let maxRetryCount = 3
 
     queue.async {
-#if RCT_NEW_ARCH_ENABLED
       // Checks if this is a view function unregistered in the view registry. The check can be performed from the main thread only.
       if retryCount < maxRetryCount,
         let viewTag = arguments.first as? Int,
@@ -145,7 +149,6 @@ public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyA
         self.dispatchOnQueueUntilViewRegisters(appContext: appContext, arguments: arguments, queue: queue, retryCount: retryCount + 1, block)
         return
       }
-#endif
       // Schedule the block as normal.
       block()
     }
@@ -153,6 +156,7 @@ public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyA
 
   // MARK: - JavaScriptObjectBuilder
 
+  @JavaScriptActor
   func build(appContext: AppContext) throws -> JavaScriptObject {
     // It seems to be safe to capture a strong reference to `self` here. This is needed for detached functions, that are not part of the module definition.
     // Module definitions are held in memory anyway, but detached definitions (returned by other functions) are not, so we need to capture them here.
@@ -177,10 +181,24 @@ public final class AsyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnyA
   }
 }
 
-// MARK: - Exceptions
+extension AsyncFunctionDefinition {
+  var requiredArgumentsCount: Int {
+    var trailingOptionalArgumentsCount: Int = 0
 
-internal final class NativeFunctionUnavailableException: GenericException<String> {
-  override var reason: String {
-    return "Native function '\(param)' is no longer available in memory"
+    let reversedArgumentTypes = dynamicArgumentTypes.reversed()
+
+    let reversedArgumentsToIterate: any Sequence<AnyDynamicType> = takesPromise
+      ? reversedArgumentTypes.dropFirst()
+      : reversedArgumentTypes
+
+    for dynamicArgumentType in reversedArgumentsToIterate {
+      if dynamicArgumentType is DynamicOptionalType {
+        trailingOptionalArgumentsCount += 1
+      } else {
+        break
+      }
+    }
+
+    return argumentsCount - trailingOptionalArgumentsCount
   }
 }

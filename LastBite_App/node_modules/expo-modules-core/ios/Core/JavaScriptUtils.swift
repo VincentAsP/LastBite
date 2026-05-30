@@ -11,7 +11,7 @@
  - Throws: Rethrows various exceptions that could be thrown by the dynamic types.
  */
 internal func cast(_ value: Any, toType type: AnyDynamicType, appContext: AppContext) throws -> Any {
-  if let dynamicJSType = type as? DynamicJavaScriptType, dynamicJSType.equals(~JavaScriptValue.self)  {
+  if let dynamicJSType = type as? DynamicJavaScriptType, dynamicJSType.equals(~JavaScriptValue.self) {
     return value
   }
   if !(type is DynamicTypedArrayType), let value = value as? JavaScriptValue {
@@ -54,9 +54,8 @@ internal func cast(jsValues: [Any], forFunction function: AnyFunctionDefinition,
       // Temporarily some values might already be cast to primitive types, so make sure we cast only `JavaScriptValue` and leave the others as they are.
       if let jsValue = jsValue as? JavaScriptValue {
         return try type.cast(jsValue: jsValue, appContext: appContext)
-      } else {
-        return jsValue
       }
+    return jsValue
     } catch {
       throw ArgumentCastException((index: index, type: type)).causedBy(error)
     }
@@ -109,17 +108,16 @@ internal func concat(
 
 // MARK: - Exceptions
 
-internal class InvalidArgsNumberException: GenericException<(received: Int, expected: Int, required: Int)> {
+internal final class InvalidArgsNumberException: GenericException<(received: Int, expected: Int, required: Int)>, @unchecked Sendable {
   override var reason: String {
     if param.required < param.expected {
       return "Received \(param.received) arguments, but \(param.expected) was expected and at least \(param.required) is required"
-    } else {
-      return "Received \(param.received) arguments, but \(param.expected) was expected"
     }
+  return "Received \(param.received) arguments, but \(param.expected) was expected"
   }
 }
 
-internal class ArgumentCastException: GenericException<(index: Int, type: AnyDynamicType)> {
+internal final class ArgumentCastException: GenericException<(index: Int, type: AnyDynamicType)>, @unchecked Sendable {
   override var reason: String {
     "The \(formatOrdinalNumber(param.index + 1)) argument cannot be cast to type \(param.type.description)"
   }
@@ -132,7 +130,7 @@ internal class ArgumentCastException: GenericException<(index: Int, type: AnyDyn
   }
 }
 
-private class ModuleUnavailableException: GenericException<String> {
+private final class ModuleUnavailableException: GenericException<String>, @unchecked Sendable {
   override var reason: String {
     "Module '\(param)' is no longer available"
   }

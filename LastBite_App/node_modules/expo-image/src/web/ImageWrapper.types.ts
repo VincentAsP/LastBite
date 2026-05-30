@@ -29,10 +29,12 @@ export type ImageWrapperProps = {
   contentPosition?: ImageContentPositionObject;
   hashPlaceholderContentPosition?: ImageContentPositionObject;
   priority?: string | null;
+  loading?: ImageProps['loading'];
   style: CSSProperties;
   tintColor?: string | null;
   hashPlaceholderStyle?: CSSProperties;
   className?: string;
   accessibilityLabel?: string;
   cachePolicy?: ImageProps['cachePolicy'];
+  draggable?: boolean;
 };

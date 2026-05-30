@@ -1,3 +1,4 @@
+import type { LoaderFunction } from 'expo-server';
 import requireContext from './require-context-ponyfill';
 import { NativeIntent } from '../types';
 export type ReactComponent = () => React.ReactElement<any, any> | null;
@@ -5,6 +6,7 @@ export type NativeIntentStub = NativeIntent;
 export type FileStub = (Record<string, unknown> & {
     default: ReactComponent;
     unstable_settings?: Record<string, any>;
+    loader?: LoaderFunction;
 }) | ReactComponent;
 export type MemoryContext = Record<string, FileStub | NativeIntentStub> & {
     '+native-intent'?: NativeIntentStub;
@@ -13,6 +15,7 @@ export { requireContext };
 export declare function inMemoryContext(context: MemoryContext): ((id: string) => NativeIntent | ReactComponent | (Record<string, unknown> & {
     default: ReactComponent;
     unstable_settings?: Record<string, any>;
+    loader?: LoaderFunction;
 }) | {
     default: NativeIntent | FileStub;
 }) & {
