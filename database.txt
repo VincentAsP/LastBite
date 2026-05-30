@@ -1,0 +1,66 @@
+CREATE TABLE role (
+    roleID INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL 
+);
+
+CREATE TABLE user (
+    userID INT AUTO_INCREMENT PRIMARY KEY,
+    roleID INT NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL, 
+    address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (roleID) REFERENCES role(roleID)
+);
+
+CREATE TABLE dashboard (
+    dashboardID INT AUTO_INCREMENT PRIMARY KEY,
+    userID INT NOT NULL,
+    totalsavedfood INT DEFAULT 0,
+    FOREIGN KEY (userID) REFERENCES user(userID) ON DELETE CASCADE
+);
+
+CREATE TABLE product (
+    productID INT AUTO_INCREMENT PRIMARY KEY,
+    sellerID INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    stock INT NOT NULL DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'available',
+    expiryTime DATETIME NOT NULL,
+    FOREIGN KEY (sellerID) REFERENCES user(userID) ON DELETE CASCADE
+);
+
+CREATE TABLE timer (
+    timerID INT AUTO_INCREMENT PRIMARY KEY,
+    productID INT NOT NULL,
+    countdown INT NOT NULL,
+    FOREIGN KEY (productID) REFERENCES product(productID) ON DELETE CASCADE
+);
+
+CREATE TABLE `order` (
+    orderID INT AUTO_INCREMENT PRIMARY KEY,
+    userID INT NOT NULL, 
+    productID INT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    total_price DECIMAL(10, 2) NOT NULL, 
+    FOREIGN KEY (userID) REFERENCES user(userID),
+    FOREIGN KEY (productID) REFERENCES product(productID)
+);
+
+CREATE TABLE delivery (
+    deliverID INT AUTO_INCREMENT PRIMARY KEY,
+    orderID INT NOT NULL,
+    method VARCHAR(50) NOT NULL,
+    address TEXT,
+    FOREIGN KEY (orderID) REFERENCES `order`(orderID) ON DELETE CASCADE
+);
+
+CREATE TABLE report (
+    reportID INT AUTO_INCREMENT PRIMARY KEY,
+    userID INT NOT NULL, 
+    sellerID INT NOT NULL, 
+    description TEXT NOT NULL,
+    FOREIGN KEY (userID) REFERENCES user(userID),
+    FOREIGN KEY (sellerID) REFERENCES user(userID)
+);
