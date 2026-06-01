@@ -1,49 +1,56 @@
 // src/api/authApi.js
 // Semua request terkait autentikasi (register, login, logout)
 
-import apiClient from '../../../AOL/apiClient'
+import apiClient from '../../../AOL/apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Daftar akun baru
- * @param {{ username: string, password: string }} credentials
+ * @param {object} userData
  */
-export const registerUser = async ({ full_name, birth_date, email, password, address}) => {
-  const { data } = await apiClient.post('/auth/register', { full_name, birth_date, email, password, address });
+export const registerUser = async ({ full_name, birth_date, email, password, address }) => {
+  const { data } = await apiClient.post('/auth/register', { 
+    full_name, 
+    birth_date, 
+    email, 
+    password, 
+    address 
+  });
   return data; 
 };
 
 /**
- * Login dan simpan token ke localStorage
- * @param {{ username: string, password: string }} credentials
- * @returns {{ message, token, user }}
+ * Login dan simpan token ke AsyncStorage
+ * @param {{ full_name: string, password: string }} credentials
+ * @returns {Promise<{ message, token, user }>}
  */
-export const loginUser = async ({ username, password }) => {
-  const { data } = await apiClient.post('/login', { username, password });
+export const loginUser = async ({ full_name, password }) => {
+  const { data } = await apiClient.post('/auth/login', { full_name, password });
 
-  // Simpan token & info user ke localStorage
+  // Simpan token & info user ke AsyncStorage
   if (data.token) {
-    localStorage.setItem('fw_token', data.token);
-    localStorage.setItem('fw_user', JSON.stringify(data.user));
+    await AsyncStorage.setItem('fw_token', data.token);
+    await AsyncStorage.setItem('fw_user', JSON.stringify(data.user));
   }
 
   return data;
 };
 
 /**
- * Logout — hapus token dari localStorage
+ * Logout — hapus token dari AsyncStorage
  */
-export const logoutUser = () => {
-  localStorage.removeItem('fw_token');
-  localStorage.removeItem('fw_user');
+export const logoutUser = async () => {
+  await AsyncStorage.removeItem('fw_token');
+  await AsyncStorage.removeItem('fw_user');
 };
 
 /**
- * Ambil data user yang sedang login dari localStorage
- * @returns {object|null}
+ * Ambil data user yang sedang login dari AsyncStorage
+ * @returns {Promise<object|null>}
  */
-export const getCurrentUser = () => {
+export const getCurrentUser = async () => {
   try {
-    const raw = localStorage.getItem('fw_user');
+    const raw = await AsyncStorage.getItem('fw_user');
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -52,8 +59,13 @@ export const getCurrentUser = () => {
 
 /**
  * Cek apakah user sudah login (ada token)
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-export const isAuthenticated = () => {
-  return !!localStorage.getItem('fw_token');
+export const isAuthenticated = async () => {
+  try {
+    const token = await AsyncStorage.getItem('fw_token');
+    return !!token;
+  } catch {
+    return false;
+  }
 };
