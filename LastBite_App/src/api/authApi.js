@@ -1,7 +1,7 @@
 // src/api/authApi.js
 // Semua request terkait autentikasi (register, login, logout)
 
-import apiClient from './apiClient';
+import apiClient from '../../../AOL/apiClient'
 
 /**
  * Daftar akun baru

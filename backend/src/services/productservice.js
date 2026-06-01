@@ -1,18 +1,20 @@
 const productModel = require('../models/productmodels');
 
-const fetchNearbyProducts = async (lat, lng, radius) => {
+const fetchNearbyProducts = async (lat, lng) => {
     // 1. Logika Validasi: Pastikan lat dan lng ada
     if (!lat || !lng) {
         throw new Error("Latitude dan Longitude harus dikirim!");
     }
 
-    // 2. Logika Default: Kalau radius nggak dikirim, set default ke 5 KM
-    const searchRadius = radius ? parseFloat(radius) : 5;
+    // Opsional: Validasi dan konversi ke angka sebelum masuk ke service
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    const radius = 2; 
 
     try {
         // 3. Panggil Model untuk ambil data dari database
         // Pastikan query di findNearbyProducts hanya mengambil produk yang statusnya 'active'
-        const products = await productModel.findNearbyProducts(lat, lng, searchRadius);
+        const products = await productModel.findNearbyProducts(lat, lng, radius);
         
         // 4. Logika Kalkulasi Timer (Sisa Waktu)
         const currentTime = new Date();

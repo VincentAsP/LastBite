@@ -13,6 +13,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
+const BASE_URL = 'https://backpack-outcast-upfront.ngrok-free.dev';
+
 // === Error code mapping ===
 const REGISTER_ERRORS: Record<number, string> = {
   400: 'Email sudah terdaftar',
@@ -67,29 +69,23 @@ export default function SignUp() {
 
     try {
       // TODO: ganti dengan real API call
-      // const res = await fetch('https://api.your-app.com/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(form),
-      // });
-      //
-      // if (!res.ok) {
-      //   const msg = REGISTER_ERRORS[res.status] ?? 'Terjadi kesalahan. Coba lagi';
-      //   setError(msg);
-      //   return;
-      // }
-      //
-      // const data = await res.json();
-      // router.push({ pathname: '/otp-verify', params: { email: form.email } });
+      const res = await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      
+      if (!res.ok) {
+        const msg = REGISTER_ERRORS[res.status] ?? 'Terjadi kesalahan. Coba lagi';
+        setError(msg);
+        return;
+      }
+      
+      const data = await res.json();
+      router.push({ pathname: '/otp-verify', params: { email: form.email } });
 
       // === Dummy logic untuk testing UI ===
       await new Promise((r) => setTimeout(r, 800));
-
-      // Simulasi error 400 — hapus block ini saat backend ready
-      if (form.email === 'taken@gmail.com') {
-        setError(REGISTER_ERRORS[400]);
-        return;
-      }
 
       console.log('Register success:', form);
     } catch (e) {

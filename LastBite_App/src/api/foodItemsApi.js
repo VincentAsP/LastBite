@@ -1,7 +1,7 @@
 // src/api/foodItemsApi.js
 // CRUD operations untuk food items
 
-import apiClient from './apiClient';
+import apiClient from '../../../AOL/apiClient';
 
 /**
  * Ambil semua food items milik user yang login
