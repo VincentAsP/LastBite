@@ -52,12 +52,12 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'src/public/uploads')));
 
 // app.use('/', authRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/impact', impactRoutes);
-app.use('/api/report', reportRoutes);
-app.use('/api/users', userRoutes);
+app.use('/auth', authRoutes);
+app.use('/products', productRoutes);
+app.use('/orders', orderRoutes);
+app.use('/impact', impactRoutes);
+app.use('/report', reportRoutes);
+app.use('/users', userRoutes);
  
 
 startCronJobs();

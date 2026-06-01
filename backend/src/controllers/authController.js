@@ -15,7 +15,7 @@ async function registerUser(req, res) {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        const sqlQuery = 'INSERT INTO user (full_name, birth_date, email, password, roleID, address) VALUES (?, ?, ?, ?, ?, ?)';
+        const sqlQuery = 'INSERT INTO user (full_name, birth_date, email, password, roleID, address) VALUES (?, ?, ?, ?, 1, ?)';
         
         await pool.query(sqlQuery, [full_name, birth_date, email, hashedPassword, roleID, address]);
         

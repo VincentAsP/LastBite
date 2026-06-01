@@ -7,9 +7,9 @@ import apiClient from '../../../AOL/apiClient'
  * Daftar akun baru
  * @param {{ username: string, password: string }} credentials
  */
-export const registerUser = async ({ username, password }) => {
-  const { data } = await apiClient.post('/api/register', { username, password });
-  return data; // { message }
+export const registerUser = async ({ full_name, birth_date, email, password, address}) => {
+  const { data } = await apiClient.post('/auth/register', { full_name, birth_date, email, password, address });
+  return data; 
 };
 
 /**
@@ -18,7 +18,7 @@ export const registerUser = async ({ username, password }) => {
  * @returns {{ message, token, user }}
  */
 export const loginUser = async ({ username, password }) => {
-  const { data } = await apiClient.post('/api/login', { username, password });
+  const { data } = await apiClient.post('/login', { username, password });
 
   // Simpan token & info user ke localStorage
   if (data.token) {
