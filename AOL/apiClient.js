@@ -8,7 +8,7 @@ import axios from 'axios';
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_HTTPS_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:5000';
+  'https://backpack-outcast-upfront.ngrok-free.dev';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

@@ -51,6 +51,7 @@ public:
     jboolean takesOwner,
     jboolean enumerable,
     jni::alias_ref<jni::JArrayClass<ExpectedType>> expectedArgTypes,
+    jint cppReturnType,
     jni::alias_ref<JNIFunctionBody::javaobject> body
   );
 
@@ -72,6 +73,7 @@ public:
   void registerClass(
     jni::alias_ref<jstring> name,
     jni::alias_ref<JSDecoratorsBridgingObject::javaobject> jsDecoratorsBridgingObject,
+    jni::alias_ref<JSDecoratorsBridgingObject::javaobject> jsDecoratorsConstructor,
     jboolean takesOwner,
     jni::alias_ref<jclass> ownerClass,
     jboolean isSharedRef,

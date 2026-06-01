@@ -30,12 +30,14 @@ const ImageWrapper = React.forwardRef(
       contentPosition,
       hashPlaceholderContentPosition,
       priority,
+      loading,
       style,
       hashPlaceholderStyle,
       tintColor,
       className,
       accessibilityLabel,
       cachePolicy,
+      draggable,
       ...props
     }: ImageWrapperProps,
     ref: Ref<HTMLImageElement>
@@ -82,6 +84,8 @@ const ImageWrapper = React.forwardRef(
           // @ts-ignore
           // eslint-disable-next-line react/no-unknown-property
           fetchPriority={getFetchPriorityFromImagePriority(priority || 'normal')}
+          loading={loading || undefined}
+          draggable={draggable}
           {...getImageWrapperEventHandler(events, sourceWithHeaders)}
           {...getImgPropsFromSource(source)}
           {...props}

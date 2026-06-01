@@ -10,6 +10,11 @@ protocol AnyConstantDefinition {
    Creates the JavaScript object representing the constant property descriptor.
    */
   func buildDescriptor(appContext: AppContext) throws -> JavaScriptObject
+
+  /**
+   Returns the raw value of the constant for encoding purposes.
+   */
+  func getRawValue() -> Any?
 }
 
 public final class ConstantDefinition<ReturnType>: AnyDefinition, AnyConstantDefinition {
@@ -59,6 +64,10 @@ public final class ConstantDefinition<ReturnType>: AnyDefinition, AnyConstantDef
     return try getter?()
   }
 
+  internal func getRawValue() -> Any? {
+    return try? getter?()
+  }
+
   /**
    Creates the JavaScript function that will be used as a getter of the constant.
    */
@@ -101,13 +110,13 @@ public final class ConstantDefinition<ReturnType>: AnyDefinition, AnyConstantDef
 
 // MARK: - Exceptions
 
-internal final class NativeConstantUnavailableException: GenericException<String> {
+internal final class NativeConstantUnavailableException: GenericException<String>, @unchecked Sendable {
   override var reason: String {
     return "Native constant '\(param)' is no longer available in memory"
   }
 }
 
-internal final class NativeConstantWithoutGetterException: GenericException<String> {
+internal final class NativeConstantWithoutGetterException: GenericException<String>, @unchecked Sendable {
   override var reason: String {
     return "Native constant '\(param)' doesn't have a getter"
   }

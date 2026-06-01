@@ -1,29 +1,56 @@
 package expo.modules.kotlin.views
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.RecomposeScope
+import androidx.compose.runtime.currentRecomposeScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.view.size
 import expo.modules.kotlin.AppContext
+import expo.modules.kotlin.viewevent.CoalescingKey
+import expo.modules.kotlin.viewevent.EventDispatcher
+import expo.modules.kotlin.viewevent.ViewEvent
+import expo.modules.kotlin.viewevent.ViewEventDelegate
 
-/**
- * Applies a test tag to a modifier if a testID is provided.
- */
-@OptIn(ExperimentalComposeUiApi::class)
-private fun Modifier.applyTestTag(testID: String?): Modifier =
-  if (!testID.isNullOrEmpty()) {
-    this.semantics { testTagsAsResourceId = true }.testTag(testID)
-  } else {
-    this
-  }
+data class ComposableScope(
+  val rowScope: RowScope? = null,
+  val columnScope: ColumnScope? = null,
+  val boxScope: BoxScope? = null,
+  val nestedScrollConnection: NestedScrollConnection? = null
+)
+
+inline fun ComposableScope.withIf(
+  condition: Boolean,
+  block: ComposableScope.() -> ComposableScope
+): ComposableScope {
+  return if (condition) block() else this
+}
+
+fun ComposableScope.with(rowScope: RowScope?): ComposableScope {
+  return this.copy(rowScope = rowScope)
+}
+
+fun ComposableScope.with(columnScope: ColumnScope?): ComposableScope {
+  return this.copy(columnScope = columnScope)
+}
+
+fun ComposableScope.with(boxScope: BoxScope?): ComposableScope {
+  return this.copy(boxScope = boxScope)
+}
+
+fun ComposableScope.with(nestedScrollConnection: NestedScrollConnection?): ComposableScope {
+  return this.copy(nestedScrollConnection = nestedScrollConnection)
+}
 
 /**
  * A base class that should be used by compose views.
@@ -34,11 +61,19 @@ abstract class ExpoComposeView<T : ComposeProps>(
   private val withHostingView: Boolean = false
 ) : ExpoView(context, appContext) {
   open val props: T? = null
+  protected var recomposeScope: RecomposeScope? = null
 
-  var testID: String? = null
+  private val globalEvent = ViewEvent<Pair<String, Map<String, Any?>>>(GLOBAL_EVENT_NAME, this, null)
+
+  /**
+   * A global event dispatcher
+   */
+  val globalEventDispatcher: (String, Map<String, Any?>) -> Unit = { name, params ->
+    globalEvent.invoke(Pair(name, params))
+  }
 
   @Composable
-  abstract fun Content(modifier: Modifier)
+  abstract fun ComposableScope.Content()
 
   override val shouldUseAndroidLayout = withHostingView
 
@@ -51,21 +86,71 @@ abstract class ExpoComposeView<T : ComposeProps>(
     super.onMeasure(widthMeasureSpec, heightMeasureSpec)
   }
 
-  @Composable
-  protected fun Children() {
-    if (withHostingView) {
-      Content(modifier = Modifier.applyTestTag(testID))
-      return
-    }
+  override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+    super.onLayout(changed, left, top, right, bottom)
 
+    // Makes sure the child ComposeView is sticky with the current hosting view
+    if (withHostingView) {
+      for (i in 0 until childCount) {
+        val child = getChildAt(i)
+        if (child is ComposeView) {
+          val offsetX = paddingLeft
+          val offsetY = paddingRight
+          child.layout(offsetX, offsetY, offsetX + width, offsetY + height)
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun Children(composableScope: ComposableScope?) {
+    recomposeScope = currentRecomposeScope
     for (index in 0..<this.size) {
       val child = getChildAt(index) as? ExpoComposeView<*> ?: continue
-      child.Content(modifier = Modifier.applyTestTag(child.testID))
+      with(composableScope ?: ComposableScope()) {
+        with(child) {
+          Content()
+        }
+      }
     }
+  }
+
+  @Composable
+  fun Children(composableScope: ComposableScope?, filter: (child: ExpoComposeView<*>) -> Boolean) {
+    recomposeScope = currentRecomposeScope
+    for (index in 0..<this.size) {
+      val child = getChildAt(index) as? ExpoComposeView<*> ?: continue
+      if (!filter(child)) {
+        continue
+      }
+      with(composableScope ?: ComposableScope()) {
+        with(child) {
+          Content()
+        }
+      }
+    }
+  }
+
+  @Composable
+  fun Child(composableScope: ComposableScope, index: Int) {
+    recomposeScope = currentRecomposeScope
+    val child = getChildAt(index) as? ExpoComposeView<*> ?: return
+    with(composableScope) {
+      with(child) {
+        Content()
+      }
+    }
+  }
+
+  @Composable
+  fun Child(index: Int) {
+    Child(ComposableScope(), index)
   }
 
   init {
     if (withHostingView) {
+      clipChildren = false
+      clipToPadding = false
       addComposeView()
     } else {
       this.visibility = GONE
@@ -78,7 +163,9 @@ abstract class ExpoComposeView<T : ComposeProps>(
       it.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       it.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
       it.setContent {
-        Children()
+        with(ComposableScope()) {
+          Content()
+        }
       }
       it.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(v: View) {
@@ -92,11 +179,78 @@ abstract class ExpoComposeView<T : ComposeProps>(
   }
 
   override fun addView(child: View, index: Int, params: ViewGroup.LayoutParams) {
-    val view = if (child !is ExpoComposeView<*> && child !is ComposeView) {
+    val view = if (child !is ExpoComposeView<*> && child !is ComposeView && this !is RNHostViewInterface) {
       ExpoComposeAndroidView(child, appContext)
     } else {
       child
     }
     super.addView(view, index, params)
+  }
+
+  override fun onViewAdded(child: View?) {
+    super.onViewAdded(child)
+    recomposeScope?.invalidate()
+  }
+
+  override fun onViewRemoved(child: View?) {
+    super.onViewRemoved(child)
+    recomposeScope?.invalidate()
+  }
+}
+
+/**
+ * A composable DSL scope that wraps an [ExpoComposeView] to provide syntax sugar.
+ *
+ * This scope allows defining view content using a functional, DSL-style API
+ * without creating a dedicated subclass of [ExpoComposeView].
+ */
+class FunctionalComposableScope(
+  val view: ComposeFunctionHolder<*>,
+  val composableScope: ComposableScope
+) {
+  val appContext = view.appContext
+  val globalEventDispatcher = view.globalEventDispatcher
+
+  @Composable
+  fun Child(composableScope: ComposableScope, index: Int) {
+    view.Child(composableScope, index)
+  }
+
+  @Composable
+  fun Child(index: Int) {
+    view.Child(index)
+  }
+
+  @Composable
+  fun Children(composableScope: ComposableScope?) {
+    view.Children(composableScope)
+  }
+
+  @Composable
+  fun Children(composableScope: ComposableScope?, filter: (child: ExpoComposeView<*>) -> Boolean) {
+    view.Children(composableScope, filter)
+  }
+
+  inline fun <reified T> EventDispatcher(noinline coalescingKey: CoalescingKey<T>? = null): ViewEventDelegate<T> {
+    return view.EventDispatcher<T>(coalescingKey)
+  }
+}
+
+@SuppressLint("ViewConstructor")
+class ComposeFunctionHolder<Props : ComposeProps>(
+  context: Context,
+  appContext: AppContext,
+  override val name: String,
+  private val composableContent: @Composable FunctionalComposableScope.(props: Props) -> Unit,
+  override val props: Props
+) : ExpoComposeView<Props>(context, appContext), ViewFunctionHolder {
+  val propsMutableState = mutableStateOf(props)
+
+  @Composable
+  override fun ComposableScope.Content() {
+    val props by propsMutableState
+    with(FunctionalComposableScope(this@ComposeFunctionHolder, this@Content)) {
+      composableContent(props)
+    }
   }
 }

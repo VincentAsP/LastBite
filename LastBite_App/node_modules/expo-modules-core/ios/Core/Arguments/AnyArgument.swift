@@ -4,7 +4,7 @@
  A protocol for classes/structs accepted as an argument of functions.
  */
 public protocol AnyArgument {
-  static func getDynamicType() -> AnyDynamicType
+  nonisolated static func getDynamicType() -> AnyDynamicType
 }
 
 extension AnyArgument {
@@ -14,7 +14,11 @@ extension AnyArgument {
 }
 
 // Extend the primitive types — these may come from React Native bridge.
-extension Bool: AnyArgument {}
+extension Bool: AnyArgument {
+  public static func getDynamicType() -> any AnyDynamicType {
+    return DynamicBoolType.shared
+  }
+}
 
 extension Int: AnyArgument {
   public static func getDynamicType() -> any AnyDynamicType {

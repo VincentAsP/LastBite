@@ -26,7 +26,7 @@ internal protocol AnySyncFunctionDefinition: AnyFunctionDefinition {
 /**
  Represents a function that can only be called synchronously.
  */
-public final class SyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnySyncFunctionDefinition {
+public class SyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnySyncFunctionDefinition, @unchecked Sendable {
   typealias ClosureType = (Args) throws -> ReturnType
 
   /**
@@ -61,7 +61,7 @@ public final class SyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnySy
 
   var takesOwner: Bool = false
 
-  func call(by owner: AnyObject?, withArguments args: [Any], appContext: AppContext, callback: @escaping (FunctionCallResult) -> ()) {
+  func call(by owner: AnyObject?, withArguments args: [Any], appContext: AppContext, callback: @escaping (FunctionCallResult) -> Void) {
     do {
       let result = try call(by: owner, withArguments: args, appContext: appContext)
       callback(.success(Conversions.convertFunctionResult(result, appContext: appContext, dynamicType: ~ReturnType.self)))
@@ -142,6 +142,7 @@ public final class SyncFunctionDefinition<Args, FirstArgType, ReturnType>: AnySy
 
   // MARK: - JavaScriptObjectBuilder
 
+  @JavaScriptActor
   func build(appContext: AppContext) throws -> JavaScriptObject {
     // We intentionally capture a strong reference to `self`, otherwise the "detached" objects would
     // immediately lose the reference to the definition and thus the underlying native function.

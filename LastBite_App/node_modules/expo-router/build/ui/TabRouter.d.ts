@@ -1,20 +1,22 @@
-import { CommonNavigationAction, ParamListBase, Router, TabActionType as RNTabActionType, TabNavigationState, TabRouterOptions as RNTabRouterOptions } from '@react-navigation/native';
+import { CommonNavigationAction, ParamListBase, Router, TabActionType as RNTabActionType, TabNavigationState, TabRouterOptions as RNTabRouterOptions, type StackActionType } from '@react-navigation/native';
 import { TriggerMap } from './common';
 export type ExpoTabRouterOptions = RNTabRouterOptions & {
     triggerMap: TriggerMap;
 };
-export type ExpoTabsResetValue = 'always' | 'onFocus' | 'never';
-export type ExpoTabActionType = RNTabActionType | CommonNavigationAction | {
+type ReplaceAction = Extract<StackActionType, {
+    type: 'REPLACE';
+}>;
+export type ExpoTabActionType = RNTabActionType | CommonNavigationAction | ReplaceAction | {
     type: 'JUMP_TO';
     source?: string;
     target?: string;
     payload: {
         name: string;
-        reset?: ExpoTabsResetValue;
+        resetOnFocus?: boolean;
         params?: object;
     };
 };
-export declare function ExpoTabRouter({ triggerMap, ...options }: ExpoTabRouterOptions): Router<TabNavigationState<ParamListBase>, {
+export declare function ExpoTabRouter(options: ExpoTabRouterOptions): Router<TabNavigationState<ParamListBase>, {
     type: "GO_BACK";
     source?: string;
     target?: string;
@@ -91,14 +93,23 @@ export declare function ExpoTabRouter({ triggerMap, ...options }: ExpoTabRouterO
     };
     source?: string;
     target?: string;
+} | {
+    type: "REPLACE";
+    payload: {
+        name: string;
+        params?: object;
+    };
+    source?: string;
+    target?: string;
 } | RNTabActionType | {
     type: "JUMP_TO";
     source?: string;
     target?: string;
     payload: {
         name: string;
-        reset?: ExpoTabsResetValue;
+        resetOnFocus?: boolean;
         params?: object;
     };
 }>;
+export {};
 //# sourceMappingURL=TabRouter.d.ts.map

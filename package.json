@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "deep-email-validator": "^0.1.27",
+    "midtrans-client": "^1.4.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.7"
+  }
+}
