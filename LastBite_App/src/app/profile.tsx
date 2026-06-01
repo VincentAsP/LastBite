@@ -159,6 +159,12 @@ export default function ProfilePage() {
         <Pressable style={styles.saveButton}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </Pressable>
+
+        {/* Delete Account Button */}
+        <Pressable style={styles.deleteButton}>
+          <Ionicons name="trash-outline" size={16} color="#DC2626" />
+          <Text style={styles.deleteButtonText}>Delete Account</Text>
+        </Pressable>
       </ScrollView>
     </LinearGradient>
   );
@@ -206,4 +212,11 @@ const styles = StyleSheet.create({
     }),
   },
   saveButtonText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+
+  deleteButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FCA5A5',
+    borderRadius: 14, paddingVertical: 16, marginTop: 12,
+  },
+  deleteButtonText: { fontSize: 15, fontWeight: '700', color: '#DC2626' },
 });
