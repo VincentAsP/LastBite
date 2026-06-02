@@ -1,7 +1,7 @@
 // src/api/reportsApi.js
 // Endpoint laporan & statistik waste
 
-import apiClient from '../../../AOL/apiClient';
+import apiClient from './apiClient';
 
 /**
  * Ambil ringkasan statistik (total, wasted, expired, donated)
@@ -27,32 +27,5 @@ export const getReportByCategory = async () => {
  */
 export const getMonthlyTrend = async () => {
   const { data } = await apiClient.get('/api/reports/monthly-trend');
-  return data;
-};
-
-export const getReports = async () => {
-  const { data } = await apiClient.get('/report/list');
-  return data;
-};
-
-export const submitReport = async (payload) => {
-  const { data } = await apiClient.post('/report/submit', payload);
-  return data;
-};
-
-
-export const resolveReport = async (reportID) => {
-  const { data } = await apiClient.put(
-    `/report/resolve/${reportID}`
-  );
-  return data;
-};
-
-
-export const suspendSeller = async (payload) => {
-  const { data } = await apiClient.post(
-    '/report/suspend',
-    payload
-  );
   return data;
 };

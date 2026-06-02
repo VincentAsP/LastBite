@@ -1,14 +1,14 @@
 // src/api/foodItemsApi.js
 // CRUD operations untuk food items
 
-import apiClient from '../../../AOL/apiClient';
+import apiClient from './apiClient';
 
 /**
  * Ambil semua food items milik user yang login
  * @returns {{ data: FoodItem[] }}
  */
 export const getFoodItems = async () => {
-  const { data } = await apiClient.get('/products/getProduct');
+  const { data } = await apiClient.get('/api/food-items');
   return data;
 };
 
@@ -24,7 +24,7 @@ export const getFoodItems = async () => {
  * }} payload
  */
 export const addFoodItem = async (payload) => {
-  const { data } = await apiClient.post('/products/addProduct', payload);
+  const { data } = await apiClient.post('/api/food-items', payload);
   return data; // { message, id }
 };
 

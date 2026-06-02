@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCart, OrderType, OrderStatus } from '../context/CartContext';
+import {confirmPayment, getInvoice} from '../api/orderApi';
+
+
+
 
 // === Konfigurasi step delivery (3 step) ===
 const DELIVERY_STEPS: {
@@ -62,9 +66,18 @@ const PICKUP_STEPS: {
 
 export default function FinishOrder() {
   const { items, orders, addOrder, clearCart } = useCart();
+  const [timeLeft, setTimeLeft] = useState(120);
+   const [alertMessage, setAlertMessage] = useState('');
+  const showAlert = (title, message) => {
+    setAlertMessage(`${title}: ${message}`);
+  };
 
   // Baca orderType dari params yang dikirim OrderSum saat checkout
-  const params = useLocalSearchParams<{ orderType?: OrderType }>();
+  const params = useLocalSearchParams<{ 
+    orderType?: OrderType;
+    orderID?: string;
+   }>();
+  const orderID = params.orderID; 
   const orderType: OrderType = params.orderType === 'pickup' ? 'pickup' : 'delivery';
 
   // Status awal saat order baru di-place
@@ -97,6 +110,68 @@ export default function FinishOrder() {
       clearCart();
     }
   }, []);
+
+  useEffect(() => {
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        return 0;
+      }
+
+      return prev - 1;
+    });
+  }, 1000);
+  return () => clearInterval(timer);
+}, []);
+
+  const handleConfirmPayment = async () => {
+  try {
+    if (!orderID) {
+      Alert.alert('Error', 'Order ID tidak ditemukan');
+      return;
+    }
+
+    const paymentResult =
+      await confirmPayment(orderID);
+
+    console.log(paymentResult);
+
+    const invoice =
+      await getInvoice(orderID);
+
+    console.log(invoice);
+
+    Alert.alert(
+      'Success',
+      'Pembayaran berhasil'
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    Alert.alert(
+      'Error',
+      'Gagal memproses pembayaran'
+    );
+  }
+};
+
+  return () => clearInterval(timer);
+}, []);
+
+useEffect(() => {
+  if (timeLeft === 0) {
+    showAlert(
+      'Payment Expired',
+      'Order otomatis dibatalkan'
+    );
+
+    setTimeout(() => {
+      router.push('/home');
+    }, 2000);
+  }
+}, [timeLeft]);
 
   // Pilih step sesuai order type
   const steps = orderType === 'delivery' ? DELIVERY_STEPS : PICKUP_STEPS;
@@ -131,7 +206,19 @@ export default function FinishOrder() {
               ? 'Your order is being prepared.\nWe\'ll keep you posted on its progress 🚀'
               : 'Your order is being prepared.\nWe\'ll let you know when it\'s ready 🌱'}
           </Text>
-
+          {alertMessage !== '' && (
+           <Text
+            style={{
+              marginTop: 10,
+              color: 'red',
+              textAlign: 'center',
+              fontWeight: 'bold'
+            }}
+          >
+            {alertMessage}
+            </Text>
+        )}
+          
           {/* Progress Timeline */}
           <View style={styles.timelineBox}>
             <Text style={styles.timelineHeading}>
