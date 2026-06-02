@@ -161,22 +161,7 @@ export default function LoginScreen() {
 
         {/* Remember me + Forgot Password */}
         <View style={styles.rowBetween}>
-          <Pressable
-            style={styles.rememberMeRow}
-            onPress={() => setRememberMe(!rememberMe)}
-          >
-            <View
-              style={[
-                styles.radioCircle,
-                rememberMe && styles.radioCircleActive,
-              ]}
-            >
-              {rememberMe && <View style={styles.radioDot} />}
-            </View>
-            <Text style={styles.smallText}>Remember me</Text>
-          </Pressable>
-
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate('/forgotpassword')}>
             <Text style={styles.smallText}>Forgot Password?</Text>
           </Pressable>
         </View>

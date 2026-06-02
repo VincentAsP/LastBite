@@ -1,26 +1,76 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   StyleSheet,
   ScrollView,
   Image,
   Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Link, router, usePathname } from 'expo-router';
 
 const PROFILE_IMG = 'https://api.builder.io/api/v1/image/assets/TEMP/75f84b2a05c559a065a8ab0e8645c12f2bce924b?width=110';
 const GIFT_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/5917e7ec8d23a54a5ebb1c97985e7dc666be04c5?width=80';
 const FOOD_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/0f608006e6a12a99de99f92c674b7a418e74269e?width=80';
 const CHART_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/d81f259d225ee70c0f4161d6fbf62412d4edcea6?width=80';
 
+// Mystery box food images (deal cards)
+const DEAL_IMG_1 = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80';
+const DEAL_IMG_2 = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
+
+type Slide = {
+  badge: string;
+  badgeColor: string;
+  title: string;
+  subtitle: string;
+  bgColor: string;
+  emoji: string;
+};
+
+const SLIDES: Slide[] = [
+  {
+    badge: 'LIMITED OFFER',
+    badgeColor: '#FCD34D',
+    title: 'Save up to 70%',
+    subtitle: 'Rescue surplus food from your favorite restaurants today',
+    bgColor: '#324D3E',
+    emoji: '🥡',
+  },
+  {
+    badge: 'ECO IMPACT',
+    badgeColor: '#A7F3D0',
+    title: 'Save Food, Save Planet',
+    subtitle: 'Every box you rescue helps reduce food waste and CO₂ emissions',
+    bgColor: '#3F6750',
+    emoji: '🌱',
+  },
+  {
+    badge: 'NEW PARTNER',
+    badgeColor: '#FED7AA',
+    title: 'Fresh Bakeries Joined',
+    subtitle: 'Discover surprise pastry boxes from local bakeries near you',
+    bgColor: '#2D4538',
+    emoji: '🥐',
+  },
+];
+
 export default function Homepage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [carouselWidth, setCarouselWidth] = useState(0);
+  const carouselRef = useRef<ScrollView>(null);
+  const pathname = usePathname();
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (carouselWidth === 0) return;
+    const index = Math.round(e.nativeEvent.contentOffset.x / carouselWidth);
+    if (index !== activeSlide) setActiveSlide(index);
+  };
 
   return (
     <LinearGradient
@@ -41,42 +91,64 @@ export default function Homepage() {
             <Ionicons name="menu" size={24} color="#324D3E" />
           </Pressable>
 
-          <Image
-            source={{ uri: PROFILE_IMG }}
-            style={styles.profileImage}
-          />
+          <Link href="/profile" asChild>
+            <Pressable>
+              <Image
+                source={{ uri: PROFILE_IMG }}
+                style={styles.profileImage}
+              />
+            </Pressable>
+          </Link>
         </View>
 
-        {/* Search bar */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#92AF8C" />
-            <TextInput
-              style={styles.searchInput}
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder="Search..."
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-          <Pressable style={styles.filterButton}>
-            <Ionicons name="options-outline" size={20} color="#324D3E" />
-          </Pressable>
-        </View>
-
-        {/* Banner card */}
-        <View style={styles.bannerWrapper}>
-          <View style={styles.bannerCard}>
-            <Text style={styles.bannerText}>Featured Banner</Text>
-          </View>
+        {/* Promo banner carousel */}
+        <View
+          style={styles.bannerWrapper}
+          onLayout={(e) => setCarouselWidth(e.nativeEvent.layout.width)}
+        >
+          <ScrollView
+            ref={carouselRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={handleScroll}
+            decelerationRate="fast"
+          >
+            {SLIDES.map((slide, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.bannerCard,
+                  { width: carouselWidth, backgroundColor: slide.bgColor },
+                ]}
+              >
+                <View style={styles.bannerTextWrap}>
+                  <View
+                    style={[
+                      styles.bannerBadge,
+                      { backgroundColor: slide.badgeColor },
+                    ]}
+                  >
+                    <Text style={styles.bannerBadgeText}>{slide.badge}</Text>
+                  </View>
+                  <Text style={styles.bannerTitle}>{slide.title}</Text>
+                  <Text style={styles.bannerSubtitle}>{slide.subtitle}</Text>
+                </View>
+                <View style={styles.bannerDecor}>
+                  <Text style={styles.bannerEmoji}>{slide.emoji}</Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
 
           {/* Carousel dots */}
           <View style={styles.dotsRow}>
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
+            {SLIDES.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, activeSlide === i && styles.dotActive]}
+              />
+            ))}
           </View>
         </View>
 
@@ -114,21 +186,78 @@ export default function Homepage() {
         <View style={styles.dealsWrapper}>
           <View style={styles.dealsHeader}>
             <Text style={styles.dealsTitle}>Best Deals Today</Text>
-            <Pressable>
-              <Text style={styles.dealsSeeAll}>See all</Text>
-            </Pressable>
+            <Link href="/mystery" asChild>
+              <Pressable>
+                <Text style={styles.dealsSeeAll}>See all</Text>
+              </Pressable>
+            </Link>
           </View>
 
           <View style={styles.dealsRow}>
-            <View style={styles.dealCard}>
-              <Text style={styles.dealPlaceholder}>Deal 1</Text>
-            </View>
-            <View style={styles.dealCard}>
-              <Text style={styles.dealPlaceholder}>Deal 2</Text>
-            </View>
+            <Link href="/mystery" asChild>
+              <Pressable style={styles.dealCard}>
+                <Image source={{ uri: DEAL_IMG_1 }} style={styles.dealImage} />
+                <View style={styles.dealDiscountBadge}>
+                  <Text style={styles.dealDiscountText}>-60%</Text>
+                </View>
+                <View style={styles.dealInfo}>
+                  <Text style={styles.dealTitle}>Mystery Box</Text>
+                  <Text style={styles.dealRestaurant}>Warung Sederhana</Text>
+                  <View style={styles.dealPriceRow}>
+                    <Text style={styles.dealPrice}>Rp 25.000</Text>
+                    <Text style={styles.dealOldPrice}>Rp 62.000</Text>
+                  </View>
+                </View>
+              </Pressable>
+            </Link>
+
+            <Link href="/mystery" asChild>
+              <Pressable style={styles.dealCard}>
+                <Image source={{ uri: DEAL_IMG_2 }} style={styles.dealImage} />
+                <View style={styles.dealDiscountBadge}>
+                  <Text style={styles.dealDiscountText}>-50%</Text>
+                </View>
+                <View style={styles.dealInfo}>
+                  <Text style={styles.dealTitle}>Mystery Box</Text>
+                  <Text style={styles.dealRestaurant}>Bakery Co.</Text>
+                  <View style={styles.dealPriceRow}>
+                    <Text style={styles.dealPrice}>Rp 30.000</Text>
+                    <Text style={styles.dealOldPrice}>Rp 60.000</Text>
+                  </View>
+                </View>
+              </Pressable>
+            </Link>
           </View>
         </View>
       </ScrollView>
+
+      {/* ─── BOTTOM NAVIGATION BAR ─── */}
+      <View style={styles.bottomNav}>
+        <Link href="/" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Ionicons
+              name={pathname === '/' ? 'home' : 'home-outline'}
+              size={24}
+              color="#fff"
+            />
+            <Text style={styles.bottomNavLabel}>Home</Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/cart" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Feather name="shopping-cart" size={24} color="#fff" />
+            <Text style={styles.bottomNavLabel}>Cart</Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/history" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Ionicons name="receipt-outline" size={24} color="#fff" />
+            <Text style={styles.bottomNavLabel}>History</Text>
+          </Pressable>
+        </Link>
+      </View>
 
       {/* ─── SIDEBAR OVERLAY ─── */}
       {sidebarOpen && (
@@ -153,13 +282,13 @@ export default function Homepage() {
 
           {/* Nav items */}
           <View style={styles.navList}>
-             <Pressable
-                  style={[styles.navItem, styles.navItemActive]}
-                  onPress={() => {
-                    setSidebarOpen(false);
-                    router.push('/');
-                  }}
-                >
+            <Pressable
+              style={[styles.navItem, styles.navItemActive]}
+              onPress={() => {
+                setSidebarOpen(false);
+                router.push('/');
+              }}
+            >
               <MaterialCommunityIcons name="storefront-outline" size={20} color="#065F46" />
               <Text style={[styles.navItemText, styles.navItemTextActive]}>
                 Switch to Seller
@@ -167,24 +296,14 @@ export default function Homepage() {
             </Pressable>
 
             <Pressable
-                style={styles.navItem}
-                onPress={() => {
-                  setSidebarOpen(false);
-                  router.push('/profile');
-                }}
-              >
-                <Ionicons name="person-outline" size={18} color="#57534E" />
-                <Text style={styles.navItemText}>Profile</Text>
-            </Pressable>
-
-            <Pressable style={styles.navItem}>
-              <Ionicons name="help-circle-outline" size={20} color="#57534E" />
-              <Text style={styles.navItemText}>Help & Support</Text>
-            </Pressable>
-
-            <Pressable style={styles.navItem}>
-              <Ionicons name="settings-outline" size={20} color="#57534E" />
-              <Text style={styles.navItemText}>Settings</Text>
+              style={styles.navItem}
+              onPress={() => {
+                setSidebarOpen(false);
+                router.push('/profile');
+              }}
+            >
+              <Ionicons name="person-outline" size={18} color="#57534E" />
+              <Text style={styles.navItemText}>Profile</Text>
             </Pressable>
           </View>
 
@@ -230,7 +349,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 110, // space for bottom nav
   },
 
   /* Header */
@@ -255,72 +374,78 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
 
-  /* Search */
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 17,
-    marginHorizontal: 22,
-    marginTop: 30,
-  },
-  searchBar: {
-    flex: 1,
-    height: 44,
-    borderRadius: 50,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#374151',
-  },
-  filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadowStyle,
-  },
-
-  /* Banner */
+  /* Promo Banner Carousel */
   bannerWrapper: {
     marginHorizontal: 22,
-    marginTop: 20,
+    marginTop: 24,
   },
   bannerCard: {
-    width: '100%',
     height: 159,
     borderRadius: 30,
-    backgroundColor: '#fff',
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    overflow: 'hidden',
+    ...shadowStyle,
+  },
+  bannerTextWrap: {
+    flex: 1,
     justifyContent: 'center',
   },
-  bannerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#92AF8C',
+  bannerBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginBottom: 8,
+  },
+  bannerBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#324D3E',
+    letterSpacing: 0.5,
+  },
+  bannerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 6,
+  },
+  bannerSubtitle: {
+    fontSize: 11,
+    color: '#DAE6D8',
+    lineHeight: 15,
+    paddingRight: 8,
+  },
+  bannerDecor: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  bannerEmoji: {
+    fontSize: 48,
   },
   dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: 10,
+    marginTop: 12,
   },
   dot: {
-    width: 5,
-    height: 10,
+    width: 6,
+    height: 6,
     borderRadius: 999,
-    backgroundColor: '#324D3E',
+    backgroundColor: 'rgba(50, 77, 62, 0.3)',
   },
   dotActive: {
-    width: 17,
+    width: 18,
+    height: 6,
+    backgroundColor: '#324D3E',
   },
 
   /* Categories */
@@ -385,13 +510,100 @@ const styles = StyleSheet.create({
     height: 218,
     borderRadius: 20,
     backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 16,
+    overflow: 'hidden',
+    ...shadowStyle,
   },
-  dealPlaceholder: {
+  dealImage: {
+    width: '100%',
+    height: 130,
+    resizeMode: 'cover',
+  },
+  dealDiscountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  dealDiscountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#fff',
+  },
+  dealInfo: {
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 10,
+  },
+  dealTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#324D3E',
+  },
+  dealRestaurant: {
+    fontSize: 11,
+    color: '#92AF8C',
+    marginTop: 2,
+  },
+  dealPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  dealPrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#324D3E',
+  },
+  dealOldPrice: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+
+  /* Bottom Navigation */
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxWidth: 402,
+    alignSelf: 'center',
+    width: '100%',
+    height: 90,
+    backgroundColor: '#92AF8C',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+    paddingTop: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: { elevation: 12 },
+      default: { boxShadow: '0 -4px 8px rgba(0,0,0,0.1)' },
+    }),
+  },
+  bottomNavItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+  },
+  bottomNavLabel: {
     fontSize: 12,
-    color: '#D1D5DB',
+    fontWeight: '600',
+    color: '#fff',
   },
 
   /* Sidebar */

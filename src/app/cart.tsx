@@ -8,13 +8,9 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCart } from '../context/CartContext';
-
-const HOME_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/bed9da29344886f2e34a5b3e19c35277006023da?width=60';
-const CART_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/e89e2d602d11a2de8ff32895a3552e5d9987bf68?width=60';
-const HISTORY_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/8c990238ba69088582be0114e07ca52e0eb6de07?width=60';
 
 const formatPrice = (amount: number) => `Rp${amount.toLocaleString('id-ID')}`;
 
@@ -67,16 +63,18 @@ export default function CartPage() {
                   <View style={styles.priceRow}>
                     <Text style={styles.priceText}>{formatPrice(item.price)}</Text>
                     <View style={styles.quantityControl}>
+                      {/* Minus button — white icon on dark bg */}
                       <Pressable
                         onPress={() => decrement(item.id)}
-                        style={styles.qtyButton}
+                        style={styles.qtyButtonMinus}
                       >
                         <Ionicons name="remove" size={14} color="#324D3E" />
                       </Pressable>
                       <Text style={styles.quantityText}>{item.quantity}</Text>
+                      {/* Plus button */}
                       <Pressable
                         onPress={() => increment(item.id)}
-                        style={styles.qtyButton}
+                        style={styles.qtyButtonPlus}
                       >
                         <Ionicons name="add" size={14} color="#fff" />
                       </Pressable>
@@ -106,24 +104,21 @@ export default function CartPage() {
         )}
       </ScrollView>
 
-      {/* Bottom navigation */}
-      <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.bottomNav}>
+      {/* ─── BOTTOM NAVIGATION BAR ─── */}
+      <View style={styles.bottomNav}>
         <Pressable style={styles.bottomNavItem} onPress={() => router.push('/home')}>
-          <Image source={{ uri: HOME_NAV_ICON }} style={styles.bottomNavIcon} />
+          <Ionicons name="home-outline" size={24} color="#fff" />
           <Text style={styles.bottomNavLabel}>Home</Text>
         </Pressable>
-        <Pressable style={[styles.bottomNavItem, styles.bottomNavItemActive]}>
-          <Image source={{ uri: CART_NAV_ICON }} style={styles.bottomNavIcon} />
+        <Pressable style={styles.bottomNavItem}>
+          <Feather name="shopping-cart" size={24} color="#fff" />
           <Text style={[styles.bottomNavLabel, styles.bottomNavLabelActive]}>Cart</Text>
         </Pressable>
-        <Pressable
-          style={styles.bottomNavItem}
-          onPress={() => router.push('/history')}
-        >
-          <Image source={{ uri: HISTORY_NAV_ICON }} style={styles.bottomNavIcon} />
+        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/history')}>
+          <Ionicons name="receipt-outline" size={24} color="#fff" />
           <Text style={styles.bottomNavLabel}>History</Text>
         </Pressable>
-      </LinearGradient>
+      </View>
     </LinearGradient>
   );
 }
@@ -136,7 +131,7 @@ const shadowStyle = Platform.select({
 
 const styles = StyleSheet.create({
   container: { flex: 1, maxWidth: 402, alignSelf: 'center', width: '100%' },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 96 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 32, paddingBottom: 110 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   title: { fontSize: 28, fontWeight: '700', color: '#324D3E' },
   cartCountBadge: { backgroundColor: 'rgba(255,255,255,0.6)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
@@ -151,7 +146,19 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   priceText: { fontSize: 15, fontWeight: '700', color: '#324D3E' },
   quantityControl: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyButton: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#324D3E', alignItems: 'center', justifyContent: 'center' },
+  /* Minus: outlined style so the icon is visible */
+  qtyButtonMinus: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: '#E8EDEA',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: '#C5D0C9',
+  },
+  /* Plus: filled dark */
+  qtyButtonPlus: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: '#324D3E',
+    alignItems: 'center', justifyContent: 'center',
+  },
   quantityText: { fontSize: 14, fontWeight: '700', color: '#324D3E', minWidth: 16, textAlign: 'center' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#324D3E', marginTop: 16 },
@@ -160,14 +167,32 @@ const styles = StyleSheet.create({
   totalCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14 },
   totalLabel: { fontSize: 14, fontWeight: '600', color: '#324D3E' },
   totalValue: { fontSize: 18, fontWeight: '700', color: '#324D3E' },
-  checkoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#324D3E', borderRadius: 14, paddingVertical: 16,
-    ...Platform.select({ ios: { shadowColor: '#324D3E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 }, android: { elevation: 6 }, default: { boxShadow: '0 8px 16px 0 rgba(50,77,62,0.3)' } })
+  checkoutButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, backgroundColor: '#324D3E', borderRadius: 14, paddingVertical: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#324D3E', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 6 },
+      default: { boxShadow: '0 8px 16px 0 rgba(50,77,62,0.3)' },
+    }),
   },
   checkoutButtonText: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 24 },
-  bottomNavItem: { alignItems: 'center', gap: 2 },
-  bottomNavItemActive: { opacity: 0.7 },
-  bottomNavIcon: { width: 28, height: 28 },
-  bottomNavLabel: { fontSize: 10, color: '#fff' },
-  bottomNavLabelActive: { fontWeight: '700', color: '#324D3E' },
+
+  /* Bottom Nav — matches home */
+  bottomNav: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    maxWidth: 402, alignSelf: 'center', width: '100%',
+    height: 90, backgroundColor: '#92AF8C',
+    flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 12, paddingTop: 12,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 12 },
+      default: { boxShadow: '0 -4px 8px rgba(0,0,0,0.1)' },
+    }),
+  },
+  bottomNavItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 6 },
+  bottomNavLabel: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  bottomNavLabelActive: { color: '#DAE6D8', fontWeight: '800' },
 });

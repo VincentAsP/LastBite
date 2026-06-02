@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 const RESEND_SECONDS = 30;
 
 export default function OtpVerify() {
@@ -55,8 +55,12 @@ export default function OtpVerify() {
   const handleVerify = () => {
     const code = otp.join('');
     if (code.length < OTP_LENGTH) return;
-    // backend handle disini — verify OTP, lalu redirect sesuai flow
+    
+    // Verify OTP logic here
     console.log('Verify OTP:', code);
+    
+    // Navigate to ForgotPassword page
+    router.push('/Resetpassword');
   };
 
   const handleResend = () => {
@@ -228,17 +232,23 @@ const styles = StyleSheet.create({
   /* OTP */
   otpRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 12,
     marginBottom: 32,
   },
   otpBox: {
-    width: 48,
+    width: 56,
     height: 56,
     borderRadius: 12,
     backgroundColor: '#fff',
     fontSize: 22,
     fontWeight: '700',
     color: '#324D3E',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    padding: 0,
+    lineHeight: 56,
     borderWidth: 1.5,
     borderColor: 'transparent',
     ...Platform.select({

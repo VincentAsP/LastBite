@@ -7,21 +7,45 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Link, router, usePathname } from 'expo-router';
 import { useCart } from '../context/CartContext';
 import { useToast } from './Toastprovider';
+
 /* ──────────────── DATA ──────────────── */
 
-const boxes = [
+type Category =
+  | 'Homemade'
+  | 'Bakery'
+  | 'Todays Leftover'
+  | 'Snack'
+  | 'Drinks'
+  | 'Other';
+
+type Box = {
+  id: number;
+  title: string;
+  store: string;
+  distance: string;
+  category: Category;
+  description?: string;
+  price: string;
+  originalPrice: string;
+  timer: number;
+  image: string;
+};
+
+const boxes: Box[] = [
   {
     id: 1,
     title: 'Artisan Sweet Box',
     store: 'Lumière Pâtisserie',
     distance: '0.8 km',
-    category: 'Sweet Bread',
+    category: 'Bakery',
+    description: 'Mixed pastries, croissants, and sweet bread from this morning\'s batch.',
     price: 'Rp45.900',
     originalPrice: 'Rp90.000',
     timer: 45 * 60 + 12,
@@ -32,7 +56,8 @@ const boxes = [
     title: 'Green Garden Surprise',
     store: 'The Sprout House',
     distance: '1.2 km',
-    category: 'Vegan',
+    category: 'Homemade',
+    description: 'Fresh homemade salad and vegan wraps prepared with locally sourced veggies.',
     price: 'Rp30.000',
     originalPrice: 'Rp60.000',
     timer: 12 * 60 + 5,
@@ -43,7 +68,7 @@ const boxes = [
     title: 'Midnight Savory Kit',
     store: 'The Urban Grill',
     distance: '2.5 km',
-    category: 'Savory',
+    category: 'Todays Leftover',
     price: 'Rp50.000',
     originalPrice: 'Rp90.000',
     timer: 5 * 60 + 44,
@@ -51,10 +76,34 @@ const boxes = [
   },
   {
     id: 4,
+    title: 'Crunchy Snack Combo',
+    store: 'Snackology',
+    distance: '1.7 km',
+    category: 'Snack',
+    description: 'Assorted chips, crackers, and cookies — perfect for movie nights.',
+    price: 'Rp25.000',
+    originalPrice: 'Rp50.000',
+    timer: 32 * 60 + 10,
+    image: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=636&q=80',
+  },
+  {
+    id: 5,
+    title: 'Cold Brew Refresher',
+    store: 'Brew & Co',
+    distance: '0.5 km',
+    category: 'Drinks',
+    price: 'Rp20.000',
+    originalPrice: 'Rp40.000',
+    timer: 18 * 60 + 30,
+    image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=636&q=80',
+  },
+  {
+    id: 6,
     title: 'Family Pantry Box',
     store: 'FreshCo Market',
     distance: '3.1 km',
-    category: 'Groceries',
+    category: 'Other',
+    description: 'Pantry staples — rice, eggs, and fresh produce close to best-before date.',
     price: 'Rp90.000',
     originalPrice: 'Rp150.000',
     timer: 38 * 60 + 19,
@@ -62,10 +111,17 @@ const boxes = [
   },
 ];
 
+const FILTERS: Array<'All' | Category> = [
+  'All',
+  'Homemade',
+  'Bakery',
+  'Todays Leftover',
+  'Snack',
+  'Drinks',
+  'Other',
+];
+
 const PROFILE_IMG = 'https://api.builder.io/api/v1/image/assets/TEMP/75f84b2a05c559a065a8ab0e8645c12f2bce924b?width=110';
-const HOME_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/bed9da29344886f2e34a5b3e19c35277006023da?width=60';
-const CART_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/e89e2d602d11a2de8ff32895a3552e5d9987bf68?width=60';
-const HISTORY_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/8c990238ba69088582be0114e07ca52e0eb6de07?width=60';
 
 function useCountdown(initialSeconds: number) {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -86,7 +142,7 @@ function useCountdown(initialSeconds: number) {
 }
 
 interface BoxCardProps {
-  box: (typeof boxes)[number];
+  box: Box;
   favorited: boolean;
   onToggleFavorite: (id: number) => void;
 }
@@ -94,7 +150,7 @@ interface BoxCardProps {
 function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
   const timeLeft = useCountdown(box.timer);
   const { addItem } = useCart();
-  const toast = useToast(); // ← pakai toast hook
+  const toast = useToast();
 
   const handleAddToCart = () => {
     try {
@@ -105,10 +161,8 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
         price: parseInt(box.price.replace(/\D/g, ''), 10),
         image: box.image,
       });
-      // ✅ Toast success
       toast.success('Added to cart', `${box.title} added successfully`);
     } catch (e) {
-      // ❌ Toast error (kalau ada error misal stok habis di backend nanti)
       toast.error('Failed to add', 'Please try again');
     }
   };
@@ -141,6 +195,12 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
           </Pressable>
         </View>
 
+        {box.description && (
+          <Text style={styles.cardDescription} numberOfLines={2}>
+            {box.description}
+          </Text>
+        )}
+
         <View style={styles.cardRow}>
           <MaterialCommunityIcons name="storefront-outline" size={12} color="#5F5E5B" />
           <Text style={styles.cardStore}>{box.store}</Text>
@@ -164,8 +224,10 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
 }
 
 export default function MysteryBox() {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'vegan' | 'halal'>('all');
+  const [activeFilter, setActiveFilter] = useState<'All' | Category>('All');
   const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set());
+  const [searchText, setSearchText] = useState('');
+  const pathname = usePathname();
 
   const toggleFavorite = (id: number) => {
     setFavoriteIds((prev) => {
@@ -177,20 +239,49 @@ export default function MysteryBox() {
   };
 
   const filteredBoxes = boxes.filter((box) => {
-    if (activeFilter === 'vegan') return box.category === 'Vegan';
-    if (activeFilter === 'halal') return box.category === 'Halal';
-    return true;
+    const matchCategory = activeFilter === 'All' || box.category === activeFilter;
+    const matchSearch =
+      searchText.trim() === '' ||
+      box.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      box.store.toLowerCase().includes(searchText.toLowerCase());
+    return matchCategory && matchSearch;
   });
 
   return (
     <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.push('/home')}>
           <Ionicons name="chevron-back" size={20} color="#1F3A2E" />
         </Pressable>
-        <Image source={{ uri: PROFILE_IMG }} style={styles.profileImage} />
+
+        <Link href="/profile" asChild>
+          <Pressable>
+            <Image source={{ uri: PROFILE_IMG }} style={styles.profileImage} />
+          </Pressable>
+        </Link>
       </View>
 
+      {/* Search bar */}
+      <View style={styles.searchWrapper}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#92AF8C" />
+          <TextInput
+            style={styles.searchInput}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Search mystery boxes..."
+            placeholderTextColor="#9CA3AF"
+          />
+          {searchText !== '' && (
+            <Pressable onPress={() => setSearchText('')}>
+              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Page tabs */}
       <View style={styles.tabsRow}>
         <Pressable style={[styles.tabButton, styles.tabButtonActive]}>
           <Text style={[styles.tabButtonText, styles.tabButtonTextActive]}>
@@ -202,50 +293,39 @@ export default function MysteryBox() {
         </Pressable>
       </View>
 
-      <View style={styles.tabsRow}>
-        <Pressable
-          style={[styles.filterChip, activeFilter === 'all' && styles.filterChipActive]}
-          onPress={() => setActiveFilter('all')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              activeFilter === 'all' && styles.filterChipTextActive,
-            ]}
-          >
-            All Boxes
-          </Text>
-        </Pressable>
+      {/* Category label */}
+      <Text style={styles.categoryLabel}>Category</Text>
 
-        <Pressable
-          style={[styles.filterChip, activeFilter === 'vegan' && styles.filterChipActive]}
-          onPress={() => setActiveFilter('vegan')}
+      {/* Filter chips (horizontal scroll) — FIX: bungkus pakai View dengan height fix */}
+      <View style={styles.filtersWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContent}
         >
-          <Text
-            style={[
-              styles.filterChipText,
-              activeFilter === 'vegan' && styles.filterChipTextActive,
-            ]}
-          >
-            Vegan
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.filterChip, activeFilter === 'halal' && styles.filterChipActive]}
-          onPress={() => setActiveFilter('halal')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              activeFilter === 'halal' && styles.filterChipTextActive,
-            ]}
-          >
-            Halal
-          </Text>
-        </Pressable>
+          {FILTERS.map((filter) => {
+            const isActive = activeFilter === filter;
+            return (
+              <Pressable
+                key={filter}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => setActiveFilter(filter)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    isActive && styles.filterChipTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
+      {/* Boxes list */}
       <ScrollView
         style={styles.scrollArea}
         contentContainerStyle={styles.scrollContent}
@@ -258,10 +338,6 @@ export default function MysteryBox() {
               Available for a limited time only
             </Text>
           </View>
-          <Pressable style={styles.viewAll}>
-            <Text style={styles.viewAllText}>View all</Text>
-            <Ionicons name="chevron-forward" size={14} color="#4F6144" />
-          </Pressable>
         </View>
 
         <View style={styles.cardsList}>
@@ -284,20 +360,33 @@ export default function MysteryBox() {
         </View>
       </ScrollView>
 
-      <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.bottomNav}>
-        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/home')}>
-          <Image source={{ uri: HOME_NAV_ICON }} style={styles.bottomNavIcon} />
-          <Text style={styles.bottomNavLabel}>Home</Text>
-        </Pressable>
-        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/cart' as any)}>
-          <Image source={{ uri: CART_NAV_ICON }} style={styles.bottomNavIcon} />
-          <Text style={styles.bottomNavLabel}>Cart</Text>
-        </Pressable>
-        <Pressable style={styles.bottomNavItem} onPress={() => router.push('/history')}>
-          <Image source={{ uri: HISTORY_NAV_ICON }} style={styles.bottomNavIcon} />
-          <Text style={styles.bottomNavLabel}>History</Text>
-        </Pressable>
-      </LinearGradient>
+      {/* ─── BOTTOM NAVIGATION BAR (matches Home) ─── */}
+      <View style={styles.bottomNav}>
+        <Link href="/home" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Ionicons
+              name={pathname === '/home' ? 'home' : 'home-outline'}
+              size={24}
+              color="#fff"
+            />
+            <Text style={styles.bottomNavLabel}>Home</Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/cart" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Feather name="shopping-cart" size={24} color="#fff" />
+            <Text style={styles.bottomNavLabel}>Cart</Text>
+          </Pressable>
+        </Link>
+
+        <Link href="/history" asChild>
+          <Pressable style={styles.bottomNavItem}>
+            <Ionicons name="receipt-outline" size={24} color="#fff" />
+            <Text style={styles.bottomNavLabel}>History</Text>
+          </Pressable>
+        </Link>
+      </View>
     </LinearGradient>
   );
 }
@@ -310,6 +399,8 @@ const shadowStyle = Platform.select({
 
 const styles = StyleSheet.create({
   container: { flex: 1, maxWidth: 402, alignSelf: 'center', width: '100%' },
+
+  /* Header */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -325,6 +416,30 @@ const styles = StyleSheet.create({
     ...shadowStyle,
   },
   profileImage: { width: 56, height: 56, borderRadius: 28 },
+
+  /* Search */
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  searchBar: {
+    height: 44,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 10,
+    ...shadowStyle,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+    outlineWidth: 0, // remove web focus ring
+  } as any,
+
+  /* Tabs */
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -339,25 +454,51 @@ const styles = StyleSheet.create({
   tabButtonActive: { backgroundColor: '#4F6144' },
   tabButtonText: { fontSize: 12, fontWeight: '700', color: '#000' },
   tabButtonTextActive: { color: '#fff' },
-  filterChip: {
-    paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999,
-    backgroundColor: '#fff', ...shadowStyle,
+
+  /* Category label */
+  categoryLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F3A2E',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
   },
-  filterChipActive: { backgroundColor: '#4F6144' },
-  filterChipText: { fontSize: 14, color: '#000' },
-  filterChipTextActive: { color: '#fff' },
-  scrollArea: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 96 },
-  sectionHeader: {
+
+  /* Filter chips — FIX: wrapper dengan height fix */
+  filtersWrapper: {
+    height: 44,
+    marginBottom: 4,
+  },
+  filtersContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadowStyle,
+  },
+  filterChipActive: { backgroundColor: '#1F3A2E' },
+  filterChipText: { fontSize: 13, color: '#1F3A2E', fontWeight: '600' },
+  filterChipTextActive: { color: '#fff', fontWeight: '700' },
+
+  /* Scroll area */
+  scrollArea: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 110 },
+  sectionHeader: {
     marginBottom: 16,
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#161D1F' },
   sectionSubtitle: { fontSize: 13, color: '#5F5E5B' },
-  viewAll: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  viewAllText: { fontSize: 13, color: '#4F6144' },
+
+  /* Cards */
   cardsList: { gap: 16 },
   emptyState: { alignItems: 'center', paddingVertical: 48 },
   emptyStateText: { fontSize: 14, color: '#4F6144' },
@@ -394,7 +535,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  cardTitle: { fontSize: 16, color: '#161D1F', flex: 1, marginRight: 8 },
+  cardTitle: { fontSize: 16, color: '#161D1F', flex: 1, marginRight: 8, fontWeight: '700' },
+  cardDescription: {
+    fontSize: 12,
+    color: '#5F5E5B',
+    lineHeight: 16,
+    marginTop: -2,
+    marginBottom: 2,
+  },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardStore: { fontSize: 13, color: '#5F5E5B', flex: 1 },
   cardDistance: { fontSize: 13, color: '#5F5E5B' },
@@ -412,19 +560,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 4,
   },
   categoryChipText: { fontSize: 13, color: '#4F6144' },
-  bottomNav: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 24,
-  },
-  bottomNavItem: { alignItems: 'center', gap: 2 },
-  bottomNavIcon: { width: 28, height: 28 },
-  bottomNavLabel: { fontSize: 10, color: '#fff' },
   addToCartBtn: {
     width: 26, height: 26, borderRadius: 13,
     backgroundColor: '#324D3E',
     alignItems: 'center', justifyContent: 'center',
+  },
+
+  /* Bottom Navigation (matches Home) */
+  bottomNav: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    maxWidth: 402,
+    alignSelf: 'center',
+    width: '100%',
+    height: 90,
+    backgroundColor: '#92AF8C',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+    paddingTop: 12,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: { elevation: 12 },
+      default: { boxShadow: '0 -4px 8px rgba(0,0,0,0.1)' },
+    }),
+  },
+  bottomNavItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+  },
+  bottomNavLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
