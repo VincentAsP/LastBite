@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { registerUser, loginUser } from '../api/authApi';
+import { router } from 'expo-router';
 
 const BASE_URL = 'https://backpack-outcast-upfront.ngrok-free.dev';
 
@@ -68,28 +70,27 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      // TODO: ganti dengan real API call
-      const res = await fetch('/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      
-      if (!res.ok) {
-        const msg = REGISTER_ERRORS[res.status] ?? 'Terjadi kesalahan. Coba lagi';
-        setError(msg);
-        return;
-      }
-      
-      const data = await res.json();
-      router.push({ pathname: '/otp-verify', params: { email: form.email } });
+      // 2. Gabungkan data agar sesuai dengan permintaan API
+      const payload = {
+        full_name: `${form.firstName} ${form.lastName}`.trim(),
+        birth_date: form.birthDate, // Pastikan format tanggal sesuai dengan backend
+        email: form.email,
+        password: form.password,
+        address: "Alamat belum diisi", // Tambahkan input address di UI jika ini wajib dari backend
+      };
 
-      // === Dummy logic untuk testing UI ===
-      await new Promise((r) => setTimeout(r, 800));
+      // 3. Panggil fungsi dari authApi.js
+      const data = await registerUser(payload);
+      
+      console.log('Register success:', data);
+      router.push({ pathname: '/otpverify', params: { email: form.email } });
 
-      console.log('Register success:', form);
     } catch (e) {
-      setError(REGISTER_ERRORS[500]);
+      const err = e as any;
+      // Menangkap error dari Axios (apiClient)
+      const status = err.response?.status || 500;
+      const msg = REGISTER_ERRORS[status] || err.response?.data?.message || 'Terjadi kesalahan. Coba lagi';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -98,6 +99,7 @@ export default function SignUp() {
   const handleSignIn = async () => {
     setError(null);
 
+    // Ubah form.email menjadi form.full_name jika backend memang wajib pakai full_name untuk login
     if (!form.email.trim() || !form.password.trim()) {
       setError(LOGIN_ERRORS[400]);
       return;
@@ -106,16 +108,22 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      await new Promise((r) => setTimeout(r, 800));
+      // 4. Panggil fungsi login dari authApi.js
+      // Asumsi backend direvisi jadi pakai email. Jika tetap full_name, ganti variabel di bawah.
+      const data = await loginUser({ 
+        email: form.email, // Sesuaikan dengan kebutuhan API kamu
+        password: form.password 
+      });
 
-      if (form.password === 'wrong') {
-        setError(LOGIN_ERRORS[401]);
-        return;
-      }
+      console.log('Login success, token saved!', data);
+      // Lanjut arahkan user ke halaman Home
+      // router.push('/home');
 
-      console.log('Login success:', { email: form.email });
     } catch (e) {
-      setError(LOGIN_ERRORS[500]);
+      const err = e as any;
+      const status = err.response?.status || 500;
+      const msg = LOGIN_ERRORS[status] || err.response?.data?.message || 'Kesalahan pada server.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

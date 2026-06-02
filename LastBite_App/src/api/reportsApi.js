@@ -1,7 +1,7 @@
 // src/api/reportsApi.js
 // Endpoint laporan & statistik waste
 
-import apiClient from '../../../AOL/apiClient';
+import apiClient from './apiClient';
 
 /**
  * Ambil ringkasan statistik (total, wasted, expired, donated)
