@@ -1,7 +1,6 @@
 // src/api/authApi.js
 // Semua request terkait autentikasi (register, login, logout)
-
-import apiClient from '../../../AOL/apiClient';
+import apiClient from './apiClient'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
@@ -21,11 +20,11 @@ export const registerUser = async ({ full_name, birth_date, email, password, add
 
 /**
  * Login dan simpan token ke AsyncStorage
- * @param {{ full_name: string, password: string }} credentials
+ * @param {{ email: string, password: string }} credentials
  * @returns {Promise<{ message, token, user }>}
  */
-export const loginUser = async ({ full_name, password }) => {
-  const { data } = await apiClient.post('/auth/login', { full_name, password });
+export const loginUser = async ({ email, password }) => {
+  const { data } = await apiClient.post('/auth/login', { email, password });
 
   // Simpan token & info user ke AsyncStorage
   if (data.token) {
