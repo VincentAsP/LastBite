@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCart, OrderType, OrderStatus } from '../context/CartContext';
-import {confirmPayment, getInvoice} from '../api/orderApi';
+import {confirmPayment, getInvoice, cancelOrder} from '../api/orderApi';
 
 
 
@@ -67,10 +67,10 @@ const PICKUP_STEPS: {
 export default function FinishOrder() {
   const { items, orders, addOrder, clearCart } = useCart();
   const [timeLeft, setTimeLeft] = useState(120);
-   const [alertMessage, setAlertMessage] = useState('');
-  const showAlert = (title, message) => {
-    setAlertMessage(`${title}: ${message}`);
-  };
+  const [alertMessage, setAlertMessage] = useState('');
+  const showAlert = (title: string, message: string) => {
+  setAlertMessage(`${title}: ${message}`);
+};
 
   // Baca orderType dari params yang dikirim OrderSum saat checkout
   const params = useLocalSearchParams<{ 
@@ -125,24 +125,65 @@ export default function FinishOrder() {
   return () => clearInterval(timer);
 }, []);
 
-  const handleConfirmPayment = async () => {
+useEffect(() => {
+  const expireOrder = async () => {
+    try {
+      if (orderID) {
+        await cancelOrder(orderID);
+      }
+
+      showAlert(
+        'Payment Expired',
+        'Order otomatis dibatalkan'
+      );
+
+      setTimeout(() => {
+        router.push('/home');
+      }, 2000);
+
+    } catch (error) {
+      console.error(error);
+
+      showAlert(
+        'Error',
+        'Gagal membatalkan order'
+      );
+    }
+  };
+
+  if (timeLeft === 0) {
+    expireOrder();
+  }
+}, [timeLeft]);
+
+const handleConfirmPayment = async () => {
   try {
+
+    if (timeLeft <= 0) {
+      showAlert(
+        'Error',
+        'Waktu pembayaran sudah habis'
+      );
+      return;
+    }
+
     if (!orderID) {
-      Alert.alert('Error', 'Order ID tidak ditemukan');
+      showAlert(
+        'Error',
+        'Order ID tidak ditemukan'
+      );
       return;
     }
 
     const paymentResult =
       await confirmPayment(orderID);
-
-    console.log(paymentResult);
-
     const invoice =
       await getInvoice(orderID);
 
+    console.log(paymentResult);
     console.log(invoice);
 
-    Alert.alert(
+    showAlert(
       'Success',
       'Pembayaran berhasil'
     );
@@ -150,28 +191,13 @@ export default function FinishOrder() {
   } catch (error) {
     console.error(error);
 
-    Alert.alert(
+    showAlert(
       'Error',
       'Gagal memproses pembayaran'
     );
   }
 };
 
-  return () => clearInterval(timer);
-}, []);
-
-useEffect(() => {
-  if (timeLeft === 0) {
-    showAlert(
-      'Payment Expired',
-      'Order otomatis dibatalkan'
-    );
-
-    setTimeout(() => {
-      router.push('/home');
-    }, 2000);
-  }
-}, [timeLeft]);
 
   // Pilih step sesuai order type
   const steps = orderType === 'delivery' ? DELIVERY_STEPS : PICKUP_STEPS;
@@ -199,6 +225,18 @@ useEffect(() => {
           </View>
 
           <Text style={styles.successTitle}>
+            {alertMessage !== '' && (
+              <Text
+                style={{
+                  marginTop: 10,
+                  color: '#B45309',
+                  fontWeight: 'bold',
+                  textAlign: 'center'
+                }}
+            >
+              {alertMessage}
+            </Text>
+            )}
             {isCompleted ? 'Order Completed!' : 'Order Placed!'}
           </Text>
           <Text style={styles.successSubtitle}>
@@ -290,6 +328,30 @@ useEffect(() => {
               );
             })}
           </View>
+          
+            <View
+              style={{
+                marginTop: 15,
+                padding: 10,
+                backgroundColor: '#FEF3C7',
+                borderRadius: 10,
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  color: '#92400E',
+                }}
+              >
+                Payment expires in:
+                {' '}
+                {Math.floor(timeLeft / 60)}:
+                {(timeLeft % 60)
+                  .toString()
+                  .padStart(2, '0')}
+              </Text>
+            </View>
 
           {/* Order details */}
           <View style={styles.detailsBox}>
@@ -333,6 +395,21 @@ useEffect(() => {
             </View>
           </View>
         </View>
+          
+                  <Pressable
+                    style={styles.primaryButton}
+                    onPress={handleConfirmPayment}
+                  >
+                    <Ionicons
+                      name="card"
+                      size={18}
+                      color="#fff"
+                    />
+
+                    <Text style={styles.primaryButtonText}>
+                      Confirm Payment
+                    </Text>
+                  </Pressable>
 
         <View style={styles.actionButtons}>
           <Pressable
