@@ -70,3 +70,12 @@ export const deleteFoodItem = async (id) => {
   const { data } = await apiClient.delete(`/api/food-items/${id}`);
   return data; // { message }
 };
+
+export const getProducts = async () => {
+  const { data } =
+    await apiClient.post(
+      '/products/getProduct'
+    );
+
+  return data;
+};
