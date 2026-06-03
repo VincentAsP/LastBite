@@ -189,7 +189,7 @@ const handleConfirmPayment = async () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     try {
-      const currentUser = await getCurrentUser();
+      const currentUser = await getCurrentUser() as any;
 
       if (currentUser?.id) {
         const pointsData = await getMyPoints(currentUser.id);
