@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useCart } from '../context/CartContext';
 import { useToast } from './Toastprovider';
+import { useProductStock } from '../api/hooks';
 /* ──────────────── DATA ──────────────── */
 
 const boxes = [
@@ -95,8 +96,13 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
   const timeLeft = useCountdown(box.timer);
   const { addItem } = useCart();
   const toast = useToast(); // ← pakai toast hook
+  const { canBuy, loading: stockLoading } = useProductStock(box.id);
 
   const handleAddToCart = () => {
+    if (!canBuy) {
+      toast.error('Stok habis', `${box.title} sudah tidak tersedia`);
+      return;
+    }
     try {
       addItem({
         id: box.id,
@@ -123,6 +129,13 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
           <Text style={styles.timerText}>{timeLeft}</Text>
         </View>
 
+        {/* ── BARU: badge "Habis" ── */}
+        {!canBuy && !stockLoading && (
+          <View style={styles.habitsBadge}>
+            <Text style={styles.habisText}>Habis</Text>
+          </View>
+        )}
+
         <View style={styles.priceBadge}>
           <Text style={styles.priceText}>{box.price}</Text>
           <Text style={styles.originalPriceText}>{box.originalPrice}</Text>
@@ -144,7 +157,15 @@ function MysteryBoxCard({ box, favorited, onToggleFavorite }: BoxCardProps) {
         <View style={styles.cardRow}>
           <MaterialCommunityIcons name="storefront-outline" size={12} color="#5F5E5B" />
           <Text style={styles.cardStore}>{box.store}</Text>
-          <Pressable style={styles.addToCartBtn} onPress={handleAddToCart}>
+
+          <Pressable 
+          disabled = {!canBuy || stockLoading}
+          style={[
+            styles.addToCartBtn,
+            !canBuy && styles.addToCartBtnDisabled,
+          ]}
+          onPress={handleAddToCart}
+          >
             <Ionicons name="add" size={16} color="#fff" />
           </Pressable>
         </View>
@@ -427,4 +448,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#324D3E',
     alignItems: 'center', justifyContent: 'center',
   },
+addToCartBtnDisabled: {
+  backgroundColor: '#B4B2A9',
+  opacity: 0.6,
+},
+
+habitsBadge: {
+  position: 'absolute',
+  bottom: 12,
+  left: 12,
+  backgroundColor: '#A32D2D',
+  borderRadius: 999,
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+},
+
+habisText: {
+  color: '#fff',
+  fontSize: 11,
+  fontWeight: '700',
+},
+
 });

@@ -1,8 +1,9 @@
 // src/hooks/useAuth.js
 // Custom hook untuk manajemen autentikasi
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { loginUser, registerUser, logoutUser, getCurrentUser, isAuthenticated } from '../api/authApi';
+import { getProductStock } from '../api/foodItemsApi';
 
 export const useAuth = () => {
   const [user, setUser]       = useState(getCurrentUser);
@@ -163,4 +164,42 @@ export const useReports = () => {
   }, []);
 
   return { summary, byCategory, monthlyTrend, loading, error };
+};
+
+export const useProductStock = (productID, pollIntervalMs = 15000) => {
+  const [canBuy, setCanBuy]   = useState(true);
+  const [stock, setStock]     = useState(null);
+  const [status, setStatus]   = useState('available');
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const intervalRef           = useRef(null);
+ 
+  const fetchStock = useCallback(async () => {
+    if (!productID) return;
+    try {
+      const result = await getProductStock(productID);
+      if (result.success) {
+        setCanBuy(result.data.can_buy);
+        setStock(result.data.stock);
+        setStatus(result.data.status);
+        setError(null);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [productID]);
+ 
+  useEffect(() => {
+    fetchStock();
+ 
+    intervalRef.current = setInterval(fetchStock, pollIntervalMs);
+ 
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchStock, pollIntervalMs]);
+ 
+  return { canBuy, stock, status, loading, error, refresh: fetchStock };
 };

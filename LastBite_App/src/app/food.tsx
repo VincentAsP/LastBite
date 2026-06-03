@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCart } from '../context/CartContext';
 import { useToast } from './Toastprovider'; // ← import toast
+import { useProductStock } from '../api/hooks';
 
 const FOOD_ITEMS = [
   {
@@ -95,8 +96,12 @@ function FoodCard({ item }: FoodCardProps) {
   const timeLeft = useCountdown(item.initialTime);
   const { addItem } = useCart();
   const toast = useToast(); // ← pakai toast hook
-
+  const { canBuy, status, loading: stockLoading } = useProductStock(item.id);
   const handleAddToCart = () => {
+    if (!canBuy) {
+      toast.error('Stok habis', `${item.name} sudah tidak tersedia`);
+      return;
+    }
     try {
       addItem({
         id: item.id,
@@ -123,6 +128,13 @@ function FoodCard({ item }: FoodCardProps) {
           <Text style={styles.timerText}>{timeLeft}</Text>
         </View>
 
+        {/* ── BARU: badge "Habis" muncul saat stok = 0 ── */}
+        {!canBuy && !stockLoading && (
+          <View style={styles.habitsBadge}>
+            <Text style={styles.habisText}>inactive</Text>
+          </View>
+        )}
+
         <View style={styles.priceBadge}>
           <Text style={styles.priceText}>{item.price}</Text>
           <Text style={styles.originalPriceText}>{item.originalPrice}</Text>
@@ -144,7 +156,14 @@ function FoodCard({ item }: FoodCardProps) {
         <View style={styles.cardRow}>
           <MaterialCommunityIcons name="storefront-outline" size={12} color="#5F5E5B" />
           <Text style={styles.cardRestaurant}>{item.restaurant}</Text>
-          <Pressable style={styles.addToCartBtn} onPress={handleAddToCart}>
+          <Pressable
+           style={[
+            styles.addToCartBtn,
+            !canBuy && styles.addToCartBtnDisabled,
+            ]} 
+            onPress={handleAddToCart}
+            disabled = {!canBuy || stockLoading}
+            >
             <Ionicons name="add" size={16} color="#fff" />
           </Pressable>
         </View>
@@ -385,4 +404,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#324D3E',
     alignItems: 'center', justifyContent: 'center',
   },
+addToCartBtnDisabled: {
+  backgroundColor: '#B4B2A9',
+  opacity: 0.6,
+},
+
+habitsBadge: {
+  position: 'absolute',
+  bottom: 12,
+  left: 12,
+  backgroundColor: '#A32D2D',
+  borderRadius: 999,
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+},
+
+habisText: {
+  color: '#fff',
+  fontSize: 11,
+  fontWeight: '700',
+},
+
 });
