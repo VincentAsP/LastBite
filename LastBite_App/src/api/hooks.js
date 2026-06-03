@@ -1,9 +1,10 @@
 // src/hooks/useAuth.js
 // Custom hook untuk manajemen autentikasi
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { loginUser, registerUser, logoutUser, getCurrentUser, isAuthenticated } from '../api/authApi';
-import { getProductStock } from '../api/foodItemsApi';
+import { getProductStock } from './foodItemsApi';
+import { getUserEcoImpact, getMyPoints } from './impactApi';
 
 export const useAuth = () => {
   const [user, setUser]       = useState(getCurrentUser);
@@ -175,10 +176,13 @@ export const useProductStock = (productID, pollIntervalMs = 15000) => {
   const intervalRef           = useRef(null);
  
   const fetchStock = useCallback(async () => {
-    if (!productID) return;
+    if (!productID){
+      setLoading(false)
+      return;
+    } 
     try {
       const result = await getProductStock(productID);
-      if (result.success) {
+      if (result.data) {
         setCanBuy(result.data.can_buy);
         setStock(result.data.stock);
         setStatus(result.data.status);
@@ -203,3 +207,41 @@ export const useProductStock = (productID, pollIntervalMs = 15000) => {
  
   return { canBuy, stock, status, loading, error, refresh: fetchStock };
 };
+
+export const useEcoImpact = (userID) => {
+    const [metrics, setMetrics]             = useState(null);
+    const [weeklyChart, setWeeklyChart]     = useState([]);
+    const [recentHistory, setRecentHistory] = useState([]);
+    const [points, setPoints]               = useState({ total_points: 0, history: [] });
+    const [loading, setLoading]             = useState(true);
+    const [error, setError]                 = useState(null);
+ 
+    const fetchAll = useCallback(async () => {
+        if (!userID) return;
+        setLoading(true);
+        setError(null);
+        try {
+            // Panggil kedua endpoint paralel untuk efisiensi
+            const [impactResult, pointsResult] = await Promise.all([
+                getUserEcoImpact(userID),
+                getMyPoints(userID),
+            ]);
+ 
+            setMetrics(impactResult.data.metrics);
+            setWeeklyChart(impactResult.data.weekly_chart);
+            setRecentHistory(impactResult.data.recent_history);
+            setPoints(pointsResult.data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [userID]);
+ 
+    useEffect(() => {
+        fetchAll();
+    }, [fetchAll]);
+ 
+    return { metrics, weeklyChart, recentHistory, points, loading, error, refresh: fetchAll 
+    };
+  };

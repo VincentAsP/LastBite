@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+
+import { useEcoImpact } from '../api/hooks';
+import { getCurrentUser } from '../api/authApi';
 
 const HOME_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/bed9da29344886f2e34a5b3e19c35277006023da?width=60';
 const CART_NAV_ICON = 'https://api.builder.io/api/v1/image/assets/TEMP/e89e2d602d11a2de8ff32895a3552e5d9987bf68?width=60';
@@ -27,35 +30,44 @@ const CHART_DATA = [
   { day: 'Min', value: 7 },
 ];
 
-/* Riwayat terakhir */
-const RIWAYAT = [
-  {
-    id: 1,
-    name: 'Ayam Geprek',
-    time: 'Hari ini - 09:15',
-    restaurant: 'Geprek Gepruk',
-  },
-  {
-    id: 2,
-    name: 'Ayam Penyet',
-    time: 'Hari ini - 09:15',
-    restaurant: 'Ayam Penyet Lala',
-  },
-  {
-    id: 3,
-    name: 'Mie Ayam',
-    time: 'Hari ini - 09:15',
-    restaurant: 'Mie ayam nih',
-  },
-];
-
-/* Hitung tinggi bar berdasarkan nilai max */
-const MAX_VALUE = Math.max(...CHART_DATA.map((d) => d.value));
-const MAX_BAR_HEIGHT = 120;
-
 export default function ChartPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
+    useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
+    const {
+    metrics,
+    weeklyChart,
+    recentHistory,
+    points,
+    loading,
+  } = useEcoImpact(user?.id);
+
+    const MAX_VALUE =
+    weeklyChart?.length > 0
+      ? Math.max(...weeklyChart.map((d: any) => d.daily_saved))
+      : 1;
+
+    const MAX_BAR_HEIGHT = 120;
+
+      if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+  
   return (
     <LinearGradient
       colors={['#DAE6D8', '#92AF8C']}
@@ -83,9 +95,19 @@ export default function ChartPage() {
         {/* Food Hero Banner */}
         <View style={styles.heroBanner}>
           <Text style={styles.heroTitle}>Food Hero</Text>
-          <Text style={styles.heroSubtitle}>
-            Kamu sudah menyelamatkan 29 porsi
-          </Text>
+            <Text style={styles.heroSubtitle}>
+              Kamu sudah menyelamatkan 29 porsi
+            </Text>
+
+            <Text
+              style={{
+                color: '#FFD700',
+                marginTop: 6,
+                fontWeight: '700',
+              }}
+            >
+              🏆 {points?.total_points ?? 0} Poin
+</Text>
         </View>
 
         {/* Stat Cards Grid 2x2 */}
@@ -105,7 +127,7 @@ export default function ChartPage() {
           {/* Row 2 */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={styles.statValue}>14 kg</Text>
+              <Text style={styles.statValue}> 14 kg</Text>
               <Text style={styles.statLabel}>CO2 Dicegah</Text>
             </View>
             <View style={styles.statCard}>
@@ -122,13 +144,17 @@ export default function ChartPage() {
           </Text>
 
           <View style={styles.chartContainer}>
-            {CHART_DATA.map((item) => {
-              const barHeight = (item.value / MAX_VALUE) * MAX_BAR_HEIGHT;
+            {weeklyChart?.map((item: any) => {
+              const barHeight = (item.daily_saved / MAX_VALUE) * MAX_BAR_HEIGHT;
+              const dayLabel = new Date(item.date)
+                .toLocaleDateString('id-ID', {
+                  weekday: 'short',
+                });
               return (
-                <View key={item.day} style={styles.barColumn}>
-                  <Text style={styles.barValue}>{item.value}</Text>
+                <View key={item.date} style={styles.barColumn}>
+                  <Text style={styles.barValue}>{item.daily_saved}</Text>
                   <View style={[styles.bar, { height: barHeight }]} />
-                  <Text style={styles.barLabel}>{item.day}</Text>
+                  <Text style={styles.barLabel}>{item.dayLabel}</Text>
                 </View>
               );
             })}
@@ -139,16 +165,18 @@ export default function ChartPage() {
         <View style={styles.riwayatSection}>
           <Text style={styles.riwayatTitle}>Riwayat Terakhir</Text>
 
-          {RIWAYAT.map((item) => (
-            <View key={item.id} style={styles.riwayatCard}>
+          {recentHistory?.map((item:any, idx: number) => (
+            <View key={idx} style={styles.riwayatCard}>
               <View style={styles.riwayatInfo}>
-                <Text style={styles.riwayatName}>{item.name}</Text>
+                <Text style={styles.riwayatName}>{item.product_name}</Text>
                 <Text style={styles.riwayatTime}>
-                  {item.time} - {item.restaurant}
+                  {new Date(item.created_at).toLocaleString('id-ID')}
+                  {' - '}
+                  {item.merchant_name}
                 </Text>
               </View>
               <View style={styles.riwayatBadge}>
-                <Text style={styles.riwayatBadgeText}>+1 selamat</Text>
+                <Text style={styles.riwayatBadgeText}>+{item.quantity} selamat</Text>
               </View>
             </View>
           ))}

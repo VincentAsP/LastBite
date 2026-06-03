@@ -12,7 +12,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCart, OrderType, OrderStatus } from '../context/CartContext';
 import {confirmPayment, getInvoice, cancelOrder} from '../api/orderApi';
-
+import { getMyPoints } from '../api/impactApi';
+import { getCurrentUser } from '../api/authApi';
 
 
 
@@ -68,6 +69,8 @@ export default function FinishOrder() {
   const { items, orders, addOrder, clearCart } = useCart();
   const [timeLeft, setTimeLeft] = useState(120);
   const [alertMessage, setAlertMessage] = useState('');
+  const [pointsEarned, setPointsEarned]   = useState<number | null>(null);
+  const [totalPoints,  setTotalPoints]    = useState<number | null>(null);
   const showAlert = (title: string, message: string) => {
   setAlertMessage(`${title}: ${message}`);
 };
@@ -182,6 +185,29 @@ const handleConfirmPayment = async () => {
 
     console.log(paymentResult);
     console.log(invoice);
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    try {
+      const currentUser = await getCurrentUser();
+
+      if (currentUser?.id) {
+        const pointsData = await getMyPoints(currentUser.id);
+
+        const orderTotal = items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+
+        const earned =
+          10 + Math.floor(orderTotal / 10000);
+
+        setPointsEarned(earned);
+        setTotalPoints(pointsData.data.total_points);
+      }
+    } catch (err) {
+      console.log('Gagal mengambil poin', err);
+    }
 
     showAlert(
       'Success',
@@ -395,7 +421,50 @@ const handleConfirmPayment = async () => {
             </View>
           </View>
         </View>
-          
+          {pointsEarned !== null && (
+                    <View
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#ECFDF5',
+                        borderRadius: 14,
+                        padding: 14,
+                        marginTop: 12,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 28,
+                          marginRight: 10,
+                        }}
+                      >
+                        🏆
+                      </Text>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: '700',
+                            color: '#065F46',
+                          }}
+                        >
+                          +{pointsEarned} Poin didapat!
+                        </Text>
+
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: '#34795A',
+                            marginTop: 2,
+                          }}
+                        >
+                          Total poin kamu sekarang: {totalPoints} poin
+                        </Text>
+                      </View>
+                    </View>
+                  )}
                   <Pressable
                     style={styles.primaryButton}
                     onPress={handleConfirmPayment}

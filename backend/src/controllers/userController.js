@@ -66,4 +66,41 @@ async function deleteAccount(req, res) {
     }
 }
 
-module.exports = { changeUserRole, deleteAccount };
+async function getUserPoints(req, res) {
+    const { userID } = req.params;
+    if (!userID) return res.status(400).json({ message: 'userID wajib diisi.' });
+ 
+    try {
+        // Total poin semua waktu
+        const [totalRows] = await pool.query(
+            `SELECT COALESCE(SUM(points), 0) AS total_points
+             FROM user_points WHERE userID = ?`,
+            [userID]
+        );
+ 
+        // 10 transaksi poin terakhir (untuk riwayat di UI)
+        const [history] = await pool.query(
+            `SELECT up.points, up.reason, up.created_at,
+                    o.total_price AS order_total
+             FROM user_points up
+             LEFT JOIN \`order\` o ON o.orderID = up.orderID
+             WHERE up.userID = ?
+             ORDER BY up.created_at DESC
+             LIMIT 10`,
+            [userID]
+        );
+ 
+        res.status(200).json({
+            message: 'Data poin berhasil diambil.',
+            data: {
+                total_points: parseInt(totalRows[0].total_points),
+                history
+            }
+        });
+    } catch (error) {
+        console.error('[getUserPoints]', error);
+        res.status(500).json({ message: 'Server error saat mengambil poin.' });
+    }
+}
+
+module.exports = { changeUserRole, deleteAccount, getUserPoints };

@@ -8,6 +8,45 @@ const snap = new midtransClient.Snap({
     clientKey: process.env.MIDTRANS_CLIENT_KEY
 });
 
+async function awardPoints(orderID) {
+    try {
+        // Ambil userID dan total_price dari order
+        const [orderRows] = await pool.query(
+            'SELECT userID, total_price FROM `order` WHERE orderID = ?',
+            [orderID]
+        );
+        if (orderRows.length === 0) return;
+ 
+        const { userID, total_price } = orderRows[0];
+ 
+        // Cegah double-award: cek apakah poin sudah pernah diberikan
+        const [existing] = await pool.query(
+            'SELECT pointID FROM user_points WHERE orderID = ?',
+            [orderID]
+        );
+        if (existing.length > 0) {
+            console.log(`[Points] Order ${orderID} sudah dapat poin, skip.`);
+            return;
+        }
+ 
+        // Hitung poin: 10 poin dasar + 1 poin per Rp10.000
+        const bonusPoints  = Math.floor(total_price / 10000);
+        const totalPoints  = 10 + bonusPoints;
+ 
+        // Simpan ke tabel user_points (lihat schema di schema-points.sql)
+        await pool.query(
+            `INSERT INTO user_points (userID, orderID, points, reason, created_at)
+             VALUES (?, ?, ?, 'order_completed', NOW())`,
+            [userID, orderID, totalPoints]
+        );
+ 
+        console.log(`[Points] Order ${orderID}: +${totalPoints} poin untuk user ${userID}`);
+    } catch (err) {
+        // Jangan sampai error poin membatalkan response ke user
+        console.error('[Points] Gagal award poin:', err.message);
+    }
+}
+
 // API CHECKOUT (+ Generate Link Bayar Midtrans)
 async function checkoutOrder(req, res) {
     const { userID, items, subtotal_price, delivery_method, address } = req.body;
@@ -173,7 +212,7 @@ async function confirmPayment(req, res) {
             setTimeout(async () => {
                 await pool.query("UPDATE delivery SET shipping_status = 'Delivered' WHERE orderID = ?", [orderID]);
                 await pool.query("UPDATE `order` SET status = 'completed' WHERE orderID = ?", [orderID]);
-
+                await awardPoints(orderID);
                 // Kirim notifikasi ke user
                 const [userToken] = await pool.query(
                     'SELECT u.fcm_token FROM user u JOIN `order` o ON u.userID = o.userID WHERE o.orderID = ?', 
@@ -195,6 +234,7 @@ async function confirmPayment(req, res) {
             setTimeout(async () => {
                 await pool.query("UPDATE delivery SET shipping_status = 'Picked Up' WHERE orderID = ?", [orderID]);
                 await pool.query("UPDATE `order` SET status = 'completed' WHERE orderID = ?", [orderID]);
+                await awardPoints(orderID);
                 console.log(`[Order ${orderID}]: Makanan telah diambil pembeli!`);
             }, 5000);
         }
