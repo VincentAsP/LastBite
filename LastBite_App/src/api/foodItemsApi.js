@@ -71,11 +71,16 @@ export const deleteFoodItem = async (id) => {
   return data; // { message }
 };
 
-export const getProducts = async () => {
+export const getProducts = async (payload) => {
   const { data } =
     await apiClient.post(
       '/products/getProduct'
     );
 
+  return data;
+};
+
+export const getProductStock = async (productID) => {
+  const { data } = await apiClient.get(`/products/stock/${productID}`);
   return data;
 };
