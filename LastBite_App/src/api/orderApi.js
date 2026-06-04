@@ -1,4 +1,4 @@
-import apiClient from '../../../AOL/apiClient';
+import apiClient from './apiClient.mjs';
 
 export const checkoutOrder = async (payload) => {
   const { data } = await apiClient.post(

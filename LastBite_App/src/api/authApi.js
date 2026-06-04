@@ -1,6 +1,6 @@
 // src/api/authApi.js
 // Semua request terkait autentikasi (register, login, logout)
-import apiClient from './apiClient'
+import apiClient from './apiClient.mjs'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**

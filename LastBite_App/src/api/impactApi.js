@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient from './apiClient.mjs';
 
 export const getUserEcoImpact = async (userID) => {
     const { data } = await apiClient.get(`/impact/${userID}`);

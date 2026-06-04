@@ -17,7 +17,7 @@ async function registerUser(req, res) {
 
         const sqlQuery = 'INSERT INTO user (full_name, birth_date, email, password, roleID, address) VALUES (?, ?, ?, ?, 1, ?)';
         
-        await pool.query(sqlQuery, [full_name, birth_date, email, hashedPassword, roleID, address]);
+        await pool.query(sqlQuery, [full_name, birth_date, email, hashedPassword, address]);
         
         // OTP Email
         const otpRandom = Math.floor(1000 + Math.random() * 9000); 
@@ -47,17 +47,14 @@ const login = async (req, res) => {
         // Ambil data user dari database
         const [users] = await pool.query('SELECT * FROM user WHERE email = ?', [email]);
 
-        if (users.length === 0) {
-            return res.status(401).json({ message: 'Email atau password salah!' });
-        }
-
-        if (users[0].status === 'deleted') {
-            return res.status(403).json({ message: 'Akun tidak ditemukan.' });
-        }
-
         const user = users[0];
-        const validPassword = await bcrypt.compare(password, user.password);
 
+        // ✅ Check if email is verified first
+        if (user.is_verified === 0 || user.is_verified === null) {
+            return res.status(403).json({ message: 'Email belum diverifikasi. Cek inbox kamu.' });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ message: 'Email atau password salah!' });
         }
@@ -78,6 +75,7 @@ const login = async (req, res) => {
         return res.status(200).json({ 
             message: 'Login berhasil!', 
             token: token,
+            user: user,
             redirectTo: redirectTarget 
         });
 

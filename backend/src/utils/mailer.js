@@ -6,14 +6,14 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'vincentiusaxelpradono@gmail.com', 
-        pass: 'pxvltvfzhydmcscp'   
+        user: 'lastbite28@gmail.com', 
+        pass: 'fiavfbndjrypwvjf'   
     }
 });
 
 const sendVerificationEmail = (toEmail, verificationCode) => {
     const mailOptions = {
-        from: 'vincentiusaxelpradono@gmail.com',
+        from: 'lastbite28@gmail.com',
         to: toEmail,
         subject: 'Verifikasi Akun LastBite Kamu!',
         text: `Halo, LastBiters! Kode OTP verifikasi kamu: ${verificationCode}. Jangan kasih tau siapa-siapa ya!`

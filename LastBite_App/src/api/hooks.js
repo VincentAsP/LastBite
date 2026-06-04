@@ -53,7 +53,7 @@ export const useAuth = () => {
 // src/hooks/useFoodItems.js
 // Custom hook untuk CRUD food items
 
-import { useState, useEffect, useCallback } from 'react';
+
 import {
   getFoodItems,
   addFoodItem,
@@ -132,7 +132,6 @@ export const useFoodItems = () => {
 // src/hooks/useReports.js
 // Custom hook untuk laporan statistik
 
-import { useState, useEffect } from 'react';
 import { getReportSummary, getReportByCategory, getMonthlyTrend } from '../api/reportsApi';
 
 export const useReports = () => {
