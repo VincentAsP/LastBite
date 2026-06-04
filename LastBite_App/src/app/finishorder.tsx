@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCart, OrderType, OrderStatus } from '../context/CartContext';
-import {confirmPayment, getInvoice, cancelOrder} from '../api/orderApi';
-import { getMyPoints } from '../api/impactApi';
-import { getCurrentUser } from '../api/authApi';
-
-
 
 // === Konfigurasi step delivery (3 step) ===
 const DELIVERY_STEPS: {
@@ -67,20 +62,9 @@ const PICKUP_STEPS: {
 
 export default function FinishOrder() {
   const { items, orders, addOrder, clearCart } = useCart();
-  const [timeLeft, setTimeLeft] = useState(120);
-  const [alertMessage, setAlertMessage] = useState('');
-  const [pointsEarned, setPointsEarned]   = useState<number | null>(null);
-  const [totalPoints,  setTotalPoints]    = useState<number | null>(null);
-  const showAlert = (title: string, message: string) => {
-  setAlertMessage(`${title}: ${message}`);
-};
 
   // Baca orderType dari params yang dikirim OrderSum saat checkout
-  const params = useLocalSearchParams<{ 
-    orderType?: OrderType;
-    orderID?: string;
-   }>();
-  const orderID = params.orderID; 
+  const params = useLocalSearchParams<{ orderType?: OrderType }>();
   const orderType: OrderType = params.orderType === 'pickup' ? 'pickup' : 'delivery';
 
   // Status awal saat order baru di-place
@@ -114,117 +98,6 @@ export default function FinishOrder() {
     }
   }, []);
 
-  useEffect(() => {
-  const timer = setInterval(() => {
-    setTimeLeft((prev) => {
-      if (prev <= 1) {
-        clearInterval(timer);
-        return 0;
-      }
-
-      return prev - 1;
-    });
-  }, 1000);
-  return () => clearInterval(timer);
-}, []);
-
-useEffect(() => {
-  const expireOrder = async () => {
-    try {
-      if (orderID) {
-        await cancelOrder(orderID);
-      }
-
-      showAlert(
-        'Payment Expired',
-        'Order otomatis dibatalkan'
-      );
-
-      setTimeout(() => {
-        router.push('/home');
-      }, 2000);
-
-    } catch (error) {
-      console.error(error);
-
-      showAlert(
-        'Error',
-        'Gagal membatalkan order'
-      );
-    }
-  };
-
-  if (timeLeft === 0) {
-    expireOrder();
-  }
-}, [timeLeft]);
-
-const handleConfirmPayment = async () => {
-  try {
-
-    if (timeLeft <= 0) {
-      showAlert(
-        'Error',
-        'Waktu pembayaran sudah habis'
-      );
-      return;
-    }
-
-    if (!orderID) {
-      showAlert(
-        'Error',
-        'Order ID tidak ditemukan'
-      );
-      return;
-    }
-
-    const paymentResult =
-      await confirmPayment(orderID);
-    const invoice =
-      await getInvoice(orderID);
-
-    console.log(paymentResult);
-    console.log(invoice);
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    try {
-      const currentUser = await getCurrentUser() as any;
-
-      if (currentUser?.id) {
-        const pointsData = await getMyPoints(currentUser.id);
-
-        const orderTotal = items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
-          0
-        );
-
-        const earned =
-          10 + Math.floor(orderTotal / 10000);
-
-        setPointsEarned(earned);
-        setTotalPoints(pointsData.data.total_points);
-      }
-    } catch (err) {
-      console.log('Gagal mengambil poin', err);
-    }
-
-    showAlert(
-      'Success',
-      'Pembayaran berhasil'
-    );
-
-  } catch (error) {
-    console.error(error);
-
-    showAlert(
-      'Error',
-      'Gagal memproses pembayaran'
-    );
-  }
-};
-
-
   // Pilih step sesuai order type
   const steps = orderType === 'delivery' ? DELIVERY_STEPS : PICKUP_STEPS;
   const currentIndex = steps.findIndex((s) => s.key === currentStatus);
@@ -251,18 +124,6 @@ const handleConfirmPayment = async () => {
           </View>
 
           <Text style={styles.successTitle}>
-            {alertMessage !== '' && (
-              <Text
-                style={{
-                  marginTop: 10,
-                  color: '#B45309',
-                  fontWeight: 'bold',
-                  textAlign: 'center'
-                }}
-            >
-              {alertMessage}
-            </Text>
-            )}
             {isCompleted ? 'Order Completed!' : 'Order Placed!'}
           </Text>
           <Text style={styles.successSubtitle}>
@@ -270,19 +131,7 @@ const handleConfirmPayment = async () => {
               ? 'Your order is being prepared.\nWe\'ll keep you posted on its progress 🚀'
               : 'Your order is being prepared.\nWe\'ll let you know when it\'s ready 🌱'}
           </Text>
-          {alertMessage !== '' && (
-           <Text
-            style={{
-              marginTop: 10,
-              color: 'red',
-              textAlign: 'center',
-              fontWeight: 'bold'
-            }}
-          >
-            {alertMessage}
-            </Text>
-        )}
-          
+
           {/* Progress Timeline */}
           <View style={styles.timelineBox}>
             <Text style={styles.timelineHeading}>
@@ -354,30 +203,6 @@ const handleConfirmPayment = async () => {
               );
             })}
           </View>
-          
-            <View
-              style={{
-                marginTop: 15,
-                padding: 10,
-                backgroundColor: '#FEF3C7',
-                borderRadius: 10,
-              }}
-            >
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontWeight: 'bold',
-                  color: '#92400E',
-                }}
-              >
-                Payment expires in:
-                {' '}
-                {Math.floor(timeLeft / 60)}:
-                {(timeLeft % 60)
-                  .toString()
-                  .padStart(2, '0')}
-              </Text>
-            </View>
 
           {/* Order details */}
           <View style={styles.detailsBox}>
@@ -421,64 +246,6 @@ const handleConfirmPayment = async () => {
             </View>
           </View>
         </View>
-          {pointsEarned !== null && (
-                    <View
-                      style={{
-                        width: '100%',
-                        backgroundColor: '#ECFDF5',
-                        borderRadius: 14,
-                        padding: 14,
-                        marginTop: 12,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 28,
-                          marginRight: 10,
-                        }}
-                      >
-                        🏆
-                      </Text>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 15,
-                            fontWeight: '700',
-                            color: '#065F46',
-                          }}
-                        >
-                          +{pointsEarned} Poin didapat!
-                        </Text>
-
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: '#34795A',
-                            marginTop: 2,
-                          }}
-                        >
-                          Total poin kamu sekarang: {totalPoints} poin
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                  <Pressable
-                    style={styles.primaryButton}
-                    onPress={handleConfirmPayment}
-                  >
-                    <Ionicons
-                      name="card"
-                      size={18}
-                      color="#fff"
-                    />
-
-                    <Text style={styles.primaryButtonText}>
-                      Confirm Payment
-                    </Text>
-                  </Pressable>
 
         <View style={styles.actionButtons}>
           <Pressable

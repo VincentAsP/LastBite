@@ -1,14 +1,14 @@
 // src/api/foodItemsApi.js
 // CRUD operations untuk food items
 
-import apiClient from './apiClient';
+import apiClient from "./apiClient.mjs";
 
 /**
  * Ambil semua food items milik user yang login
  * @returns {{ data: FoodItem[] }}
  */
 export const getFoodItems = async () => {
-  const { data } = await apiClient.get('/products/getProduct');
+  const { data } = await apiClient.get("/products/getProduct");
   return data;
 };
 
@@ -24,7 +24,7 @@ export const getFoodItems = async () => {
  * }} payload
  */
 export const addFoodItem = async (payload) => {
-  const { data } = await apiClient.post('/products/addProduct', payload);
+  const { data } = await apiClient.post("/products/addProduct", payload);
   return data; // { message, id }
 };
 
@@ -43,7 +43,7 @@ export const updateFoodItem = async (id, payload) => {
  * @param {number} id
  */
 export const markAsWasted = async (id) => {
-  return updateFoodItem(id, { status: 'wasted' });
+  return updateFoodItem(id, { status: "wasted" });
 };
 
 /**
@@ -51,7 +51,7 @@ export const markAsWasted = async (id) => {
  * @param {number} id
  */
 export const markAsDonated = async (id) => {
-  return updateFoodItem(id, { status: 'donated' });
+  return updateFoodItem(id, { status: "donated" });
 };
 
 /**
@@ -59,7 +59,7 @@ export const markAsDonated = async (id) => {
  * @param {number} id
  */
 export const markAsConsumed = async (id) => {
-  return updateFoodItem(id, { status: 'consumed' });
+  return updateFoodItem(id, { status: "consumed" });
 };
 
 /**
@@ -72,10 +72,7 @@ export const deleteFoodItem = async (id) => {
 };
 
 export const getProducts = async (payload) => {
-  const { data } =
-    await apiClient.post(
-      '/products/getProduct'
-    );
+  const { data } = await apiClient.post("/products/getProduct");
 
   return data;
 };

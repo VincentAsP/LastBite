@@ -1,15 +1,21 @@
 // src/hooks/useAuth.js
 // Custom hook untuk manajemen autentikasi
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { loginUser, registerUser, logoutUser, getCurrentUser, isAuthenticated } from '../api/authApi';
-import { getProductStock } from './foodItemsApi';
-import { getUserEcoImpact, getMyPoints } from './impactApi';
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  getCurrentUser,
+  isAuthenticated,
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "../api/authApi.js";
+import { getProductStock } from "./foodItemsApi.js";
+import { getMyPoints, getUserEcoImpact } from "./impactApi.js";
 
 export const useAuth = () => {
-  const [user, setUser]       = useState(getCurrentUser);
+  const [user, setUser] = useState(getCurrentUser);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
 
   const login = useCallback(async (credentials) => {
     setLoading(true);
@@ -45,7 +51,15 @@ export const useAuth = () => {
     setUser(null);
   }, []);
 
-  return { user, loading, error, login, register, logout, isAuthenticated: isAuthenticated() };
+  return {
+    user,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+    isAuthenticated: isAuthenticated(),
+  };
 };
 
 // ============================================================
@@ -53,21 +67,20 @@ export const useAuth = () => {
 // src/hooks/useFoodItems.js
 // Custom hook untuk CRUD food items
 
-import { useState, useEffect, useCallback } from 'react';
 import {
-  getFoodItems,
   addFoodItem,
-  updateFoodItem,
   deleteFoodItem,
-  markAsWasted,
-  markAsDonated,
+  getFoodItems,
   markAsConsumed,
-} from '../api/foodItemsApi';
+  markAsDonated,
+  markAsWasted,
+  updateFoodItem,
+} from "../api/foodItemsApi";
 
 export const useFoodItems = () => {
-  const [items, setItems]     = useState([]);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -83,7 +96,9 @@ export const useFoodItems = () => {
   }, []);
 
   // Auto-fetch saat hook pertama dipakai
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const addItem = async (payload) => {
     const result = await addFoodItem(payload);
@@ -103,13 +118,13 @@ export const useFoodItems = () => {
     return result;
   };
 
-  const wasteItem  = (id) => markAsWasted(id).then(fetchItems);
+  const wasteItem = (id) => markAsWasted(id).then(fetchItems);
   const donateItem = (id) => markAsDonated(id).then(fetchItems);
   const consumeItem = (id) => markAsConsumed(id).then(fetchItems);
 
   // Items yang sudah expired tapi belum di-update statusnya
   const expiredItems = items.filter(
-    (i) => i.status === 'active' && new Date(i.expiry_date) < new Date()
+    (i) => i.status === "active" && new Date(i.expiry_date) < new Date(),
   );
 
   return {
@@ -132,15 +147,18 @@ export const useFoodItems = () => {
 // src/hooks/useReports.js
 // Custom hook untuk laporan statistik
 
-import { useState, useEffect } from 'react';
-import { getReportSummary, getReportByCategory, getMonthlyTrend } from '../api/reportsApi';
+import {
+  getMonthlyTrend,
+  getReportByCategory,
+  getReportSummary,
+} from "../api/reportsApi";
 
 export const useReports = () => {
-  const [summary, setSummary]         = useState(null);
-  const [byCategory, setByCategory]   = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [byCategory, setByCategory] = useState([]);
   const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -168,18 +186,18 @@ export const useReports = () => {
 };
 
 export const useProductStock = (productID, pollIntervalMs = 15000) => {
-  const [canBuy, setCanBuy]   = useState(true);
-  const [stock, setStock]     = useState(null);
-  const [status, setStatus]   = useState('available');
+  const [canBuy, setCanBuy] = useState(true);
+  const [stock, setStock] = useState(null);
+  const [status, setStatus] = useState("available");
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
-  const intervalRef           = useRef(null);
- 
+  const [error, setError] = useState(null);
+  const intervalRef = useRef(null);
+
   const fetchStock = useCallback(async () => {
-    if (!productID){
-      setLoading(false)
+    if (!productID) {
+      setLoading(false);
       return;
-    } 
+    }
     try {
       const result = await getProductStock(productID);
       if (result.data) {
@@ -194,54 +212,61 @@ export const useProductStock = (productID, pollIntervalMs = 15000) => {
       setLoading(false);
     }
   }, [productID]);
- 
+
   useEffect(() => {
     fetchStock();
- 
+
     intervalRef.current = setInterval(fetchStock, pollIntervalMs);
- 
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [fetchStock, pollIntervalMs]);
- 
+
   return { canBuy, stock, status, loading, error, refresh: fetchStock };
 };
 
 export const useEcoImpact = (userID) => {
-    const [metrics, setMetrics]             = useState(null);
-    const [weeklyChart, setWeeklyChart]     = useState([]);
-    const [recentHistory, setRecentHistory] = useState([]);
-    const [points, setPoints]               = useState({ total_points: 0, history: [] });
-    const [loading, setLoading]             = useState(true);
-    const [error, setError]                 = useState(null);
- 
-    const fetchAll = useCallback(async () => {
-        if (!userID) return;
-        setLoading(true);
-        setError(null);
-        try {
-            // Panggil kedua endpoint paralel untuk efisiensi
-            const [impactResult, pointsResult] = await Promise.all([
-                getUserEcoImpact(userID),
-                getMyPoints(userID),
-            ]);
- 
-            setMetrics(impactResult.data.metrics);
-            setWeeklyChart(impactResult.data.weekly_chart);
-            setRecentHistory(impactResult.data.recent_history);
-            setPoints(pointsResult.data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [userID]);
- 
-    useEffect(() => {
-        fetchAll();
-    }, [fetchAll]);
- 
-    return { metrics, weeklyChart, recentHistory, points, loading, error, refresh: fetchAll 
-    };
+  const [metrics, setMetrics] = useState(null);
+  const [weeklyChart, setWeeklyChart] = useState([]);
+  const [recentHistory, setRecentHistory] = useState([]);
+  const [points, setPoints] = useState({ total_points: 0, history: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAll = useCallback(async () => {
+    if (!userID) return;
+    setLoading(true);
+    setError(null);
+    try {
+      // Panggil kedua endpoint paralel untuk efisiensi
+      const [impactResult, pointsResult] = await Promise.all([
+        getUserEcoImpact(userID),
+        getMyPoints(userID),
+      ]);
+
+      setMetrics(impactResult.data.metrics);
+      setWeeklyChart(impactResult.data.weekly_chart);
+      setRecentHistory(impactResult.data.recent_history);
+      setPoints(pointsResult.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [userID]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  return {
+    metrics,
+    weeklyChart,
+    recentHistory,
+    points,
+    loading,
+    error,
+    refresh: fetchAll,
   };
+};

@@ -1,21 +1,27 @@
 // src/api/authApi.js
 // Semua request terkait autentikasi (register, login, logout)
-import apiClient from './apiClient'
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import apiClient from "./apiClient.mjs";
 
 /**
  * Daftar akun baru
  * @param {object} userData
  */
-export const registerUser = async ({ full_name, birth_date, email, password, address }) => {
-  const { data } = await apiClient.post('/auth/register', { 
-    full_name, 
-    birth_date, 
-    email, 
-    password, 
-    address 
+export const registerUser = async ({
+  full_name,
+  birth_date,
+  email,
+  password,
+  address,
+}) => {
+  const { data } = await apiClient.post("/auth/register", {
+    full_name,
+    birth_date,
+    email,
+    password,
+    address,
   });
-  return data; 
+  return data;
 };
 
 /**
@@ -24,12 +30,12 @@ export const registerUser = async ({ full_name, birth_date, email, password, add
  * @returns {Promise<{ message, token, user }>}
  */
 export const loginUser = async ({ email, password }) => {
-  const { data } = await apiClient.post('/auth/login', { email, password });
+  const { data } = await apiClient.post("/auth/login", { email, password });
 
   // Simpan token & info user ke AsyncStorage
   if (data.token) {
-    await AsyncStorage.setItem('fw_token', data.token);
-    await AsyncStorage.setItem('fw_user', JSON.stringify(data.user));
+    await AsyncStorage.setItem("fw_token", data.token);
+    await AsyncStorage.setItem("fw_user", JSON.stringify(data.user));
   }
 
   return data;
@@ -39,8 +45,8 @@ export const loginUser = async ({ email, password }) => {
  * Logout — hapus token dari AsyncStorage
  */
 export const logoutUser = async () => {
-  await AsyncStorage.removeItem('fw_token');
-  await AsyncStorage.removeItem('fw_user');
+  await AsyncStorage.removeItem("fw_token");
+  await AsyncStorage.removeItem("fw_user");
 };
 
 /**
@@ -49,7 +55,7 @@ export const logoutUser = async () => {
  */
 export const getCurrentUser = async () => {
   try {
-    const raw = await AsyncStorage.getItem('fw_user');
+    const raw = await AsyncStorage.getItem("fw_user");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -62,7 +68,7 @@ export const getCurrentUser = async () => {
  */
 export const isAuthenticated = async () => {
   try {
-    const token = await AsyncStorage.getItem('fw_token');
+    const token = await AsyncStorage.getItem("fw_token");
     return !!token;
   } catch {
     return false;

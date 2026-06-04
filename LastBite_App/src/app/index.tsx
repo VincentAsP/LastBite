@@ -1,31 +1,34 @@
-import { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { Link, router } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  Pressable,
-  StyleSheet,
-  Image,
-  ScrollView,
-  Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+  View,
+} from "react-native";
+
+// IMPORT FUNGSI API LOGIN
+import { loginUser } from "../api/authApi";
 
 // === Error code mapping ===
 const ERROR_MESSAGES: Record<number, string> = {
-  400: 'Email dan password wajib diisi',
-  401: 'Email atau password salah',
-  500: 'Kesalahan pada server. Silakan coba lagi nanti',
+  400: "Email dan password wajib diisi",
+  401: "Email atau password salah",
+  500: "Kesalahan pada server. Silakan coba lagi nanti",
 };
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -41,48 +44,32 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // TODO: ganti dengan real API call ke backend
-      // Contoh struktur:
-      // const res = await fetch('https://api.your-app.com/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password, rememberMe }),
-      // });
-      //
-      // if (!res.ok) {
-      //   const msg = ERROR_MESSAGES[res.status] ?? 'Terjadi kesalahan. Coba lagi';
-      //   setError(msg);
-      //   return;
-      // }
-      //
-      // const data = await res.json();
-      // // simpan token: AsyncStorage / SecureStore
-      // router.replace('/home');
+      // 1. Tembak API Login ke backend
+      const data = await loginUser({
+        email: email.trim(),
+        password: password,
+      });
 
-      // === Dummy logic untuk testing UI ===
-      await new Promise((r) => setTimeout(r, 800));
+      console.log("Login success:", data);
 
-      // Simulasi error 401 untuk testing — hapus block ini nanti
-      if (password === 'wrong') {
-        setError(ERROR_MESSAGES[401]);
-        return;
+      // 2. Arahkan halaman berdasarkan Role ID user (seperti di Signup)
+      if (data.user?.roleID === 3) {
+        router.replace("/Adminreport"); // Ke halaman Admin
+      } else {
+        router.replace("/home"); // Ke halaman Buyer / Customer
       }
-
-      console.log('Login success:', { email, rememberMe });
-      router.replace('/home');
-    } catch (e) {
-      // Network error atau exception lain — perlakukan sebagai 500
-      setError(ERROR_MESSAGES[500]);
+    } catch (e: any) {
+      // Tangkap pesan error dari apiClient atau backend
+      const status = e.response?.status || 500;
+      const msg = ERROR_MESSAGES[status] || e.message || ERROR_MESSAGES[500];
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <LinearGradient
-      colors={['#DAE6D8', '#92AF8C']}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#DAE6D8", "#92AF8C"]} style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -90,7 +77,7 @@ export default function LoginScreen() {
         {/* Logo */}
         <Image
           source={{
-            uri: 'https://api.builder.io/api/v1/image/assets/TEMP/50cba1698601e650ab853fd68a32e371ac49f6cf?width=298',
+            uri: "https://api.builder.io/api/v1/image/assets/TEMP/50cba1698601e650ab853fd68a32e371ac49f6cf?width=298",
           }}
           style={styles.logo}
           resizeMode="contain"
@@ -101,7 +88,7 @@ export default function LoginScreen() {
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Access your account to manage settings,{'\n'}explore features.
+          Access your account to manage settings,{"\n"}explore features.
         </Text>
 
         {/* Error Banner */}
@@ -151,7 +138,7 @@ export default function LoginScreen() {
               style={styles.eyeIcon}
             >
               <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={18}
                 color="#748B6F"
               />
@@ -161,29 +148,18 @@ export default function LoginScreen() {
 
         {/* Remember me + Forgot Password */}
         <View style={styles.rowBetween}>
-          <Pressable
-            style={styles.rememberMeRow}
-            onPress={() => setRememberMe(!rememberMe)}
-          >
-            <View
-              style={[
-                styles.radioCircle,
-                rememberMe && styles.radioCircleActive,
-              ]}
-            >
-              {rememberMe && <View style={styles.radioDot} />}
-            </View>
-            <Text style={styles.smallText}>Remember me</Text>
-          </Pressable>
-
-          <Pressable>
+          {/* Mengganti navigation.navigate menjadi router.push agar tidak error di Expo Router */}
+          <Pressable onPress={() => router.push("/forgotpassword")}>
             <Text style={styles.smallText}>Forgot Password?</Text>
           </Pressable>
         </View>
 
         {/* Get Started Button */}
         <Pressable
-          style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+          style={[
+            styles.primaryButton,
+            loading && styles.primaryButtonDisabled,
+          ]}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -210,7 +186,7 @@ export default function LoginScreen() {
 
 const shadowStyle = Platform.select({
   ios: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -219,7 +195,7 @@ const shadowStyle = Platform.select({
     elevation: 4,
   },
   default: {
-    boxShadow: '0 4px 4px 0 rgba(0,0,0,0.25)',
+    boxShadow: "0 4px 4px 0 rgba(0,0,0,0.25)",
   },
 });
 
@@ -229,12 +205,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingVertical: 32,
     maxWidth: 402,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
   },
   logo: {
     width: 144,
@@ -244,27 +220,25 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 30,
-    fontWeight: '700',
-    color: '#748B6F',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#748B6F",
+    textAlign: "center",
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 12,
-    color: '#748B6F',
-    textAlign: 'center',
+    color: "#748B6F",
+    textAlign: "center",
     marginBottom: 24,
   },
-
-  /* Error banner */
   errorBanner: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderLeftWidth: 3,
-    borderLeftColor: '#DC2626',
+    borderLeftColor: "#DC2626",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -273,98 +247,73 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 12,
-    fontWeight: '600',
-    color: '#B91C1C',
+    fontWeight: "600",
+    color: "#B91C1C",
     lineHeight: 16,
   },
-
   field: {
-    width: '100%',
+    width: "100%",
     marginBottom: 12,
   },
   label: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#748B6F',
+    fontWeight: "700",
+    color: "#748B6F",
     marginBottom: 8,
     paddingLeft: 4,
   },
   input: {
-    width: '100%',
+    width: "100%",
     height: 41,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingHorizontal: 20,
     fontSize: 12,
-    color: '#748B6F',
+    color: "#748B6F",
     ...shadowStyle,
   },
   passwordContainer: {
-    position: 'relative',
-    justifyContent: 'center',
+    position: "relative",
+    justifyContent: "center",
   },
   passwordInput: {
-    width: '100%',
+    width: "100%",
     height: 41,
     borderRadius: 999,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingLeft: 20,
     paddingRight: 48,
     fontSize: 12,
-    color: '#748B6F',
+    color: "#748B6F",
     ...shadowStyle,
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
-    height: '100%',
-    justifyContent: 'center',
+    height: "100%",
+    justifyContent: "center",
   },
   rowBetween: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "flex-end", // Diubah supaya Forgot Password rata kanan
+    alignItems: "center",
     marginTop: 4,
     marginBottom: 24,
     paddingHorizontal: 4,
   },
-  rememberMeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  radioCircle: {
-    width: 11,
-    height: 11,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  radioCircleActive: {
-    backgroundColor: '#324D3E',
-  },
-  radioDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: '#fff',
-  },
   smallText: {
-    fontSize: 8,
-    fontWeight: '700',
-    color: '#324D3E',
+    fontSize: 12, // Saya besarkan sedikit agar mudah diklik di HP
+    fontWeight: "700",
+    color: "#324D3E",
   },
   primaryButton: {
     paddingHorizontal: 32,
-    height: 32,
+    height: 40, // Saya besarkan sedikit agar lebih enak ditekan
     borderRadius: 999,
-    backgroundColor: '#324D3E',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#324D3E",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 24,
     ...shadowStyle,
   },
@@ -372,22 +321,22 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   signupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 16,
   },
   signupText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
   },
   signupLink: {
-    color: '#748B6F',
+    color: "#748B6F",
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
