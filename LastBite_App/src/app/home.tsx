@@ -2,6 +2,8 @@ import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, router, usePathname } from "expo-router";
 import { useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getCurrentUser } from "../api/authApi";
 import {
   Image,
   NativeScrollEvent,
@@ -327,9 +329,11 @@ export default function Homepage() {
           <View style={styles.logoutWrapper}>
             <Pressable
               style={styles.logoutButton}
-              onPress={() => {
+              onPress={async () => {
                 setSidebarOpen(false);
-                router.push("/");
+                await AsyncStorage.removeItem("fw_token");
+                await AsyncStorage.removeItem("fw_user");
+                router.replace("/");
               }}
             >
               <Ionicons name="log-out-outline" size={20} color="#DC2626" />

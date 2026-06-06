@@ -1,33 +1,55 @@
 const db = require('../config/db');
 
 
-const findNearbyProduct = async (lat, lng, radius) => {
-    const sql = `
-        SELECT 
-            p.*, 
-            u.full_name AS seller_name, 
-            u.address AS seller_address,
-            u.latitude AS seller_latitude,
-            u.longitude AS seller_longitude,
-            (
-                6371 * acos(
-                    cos(radians(?)) * cos(radians(u.latitude)) * cos(radians(u.longitude) - radians(?)) + 
-                    sin(radians(?)) * sin(radians(u.latitude))
-                )
-            ) AS distance_km
-        FROM product p
-        JOIN user u ON p.sellerID = u.userID
-        WHERE p.status = 'active'
-        HAVING distance_km <= ?
-        ORDER BY distance_km ASC
-    `;
+// const findNearbyProduct = async (lat, lng, radius) => {
+//     const sql = `
+//         SELECT 
+//             p.*, 
+//             u.full_name AS seller_name, 
+//             u.address AS seller_address,
+//             u.latitude AS seller_latitude,
+//             u.longitude AS seller_longitude,
+//             (
+//                 6371 * acos(
+//                     cos(radians(?)) * cos(radians(u.latitude)) * cos(radians(u.longitude) - radians(?)) + 
+//                     sin(radians(?)) * sin(radians(u.latitude))
+//                 )
+//             ) AS distance_km
+//         FROM product p
+//         JOIN user u ON p.sellerID = u.userID
+//         WHERE p.status = 'active'
+//         HAVING distance_km <= ?
+//         ORDER BY distance_km ASC
+//     `;
 
-    const values = [lat, lng, lat, radius];
+//     const values = [lat, lng, lat, radius];
 
-    const [results] = await db.query(sql, values);
-    return results;
+//     const [results] = await db.query(sql, values);
+//     return results;
+// };
+
+const findNearbyProduct = async (lat, lng) => {
+  const [rows] = await db.query(
+    `SELECT p.*,
+            u.full_name AS restaurant,
+            ROUND(
+              6371000 * ACOS(
+                COS(RADIANS(?)) * COS(RADIANS(u.lat)) *
+                COS(RADIANS(u.lng) - RADIANS(?)) +
+                SIN(RADIANS(?)) * SIN(RADIANS(u.lat))
+              )
+            ) AS distance_meters
+     FROM product p
+     JOIN user u ON u.userID = p.sellerID
+     WHERE p.status = 'active'
+       AND p.stock > 0
+       AND u.lat IS NOT NULL
+       AND u.lng IS NOT NULL
+     ORDER BY distance_meters ASC`,
+    [lat, lng, lat]
+  );
+  return rows;
 };
-
 
 const updateExpiredProducts = async () => {
     const sql = `

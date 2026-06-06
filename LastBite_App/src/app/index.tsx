@@ -14,19 +14,17 @@ import {
   View,
 } from "react-native";
 
-// IMPORT FUNGSI API LOGIN
 import { loginUser } from "../api/authApi";
 
-// === Error code mapping ===
 const ERROR_MESSAGES: Record<number, string> = {
   400: "Email dan password wajib diisi",
   401: "Email atau password salah",
+  403: "Email belum diverifikasi",
   500: "Kesalahan pada server. Silakan coba lagi nanti",
 };
 
 export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +33,6 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setError(null);
 
-    // Client-side validation cepat — preempt 400
     if (!email.trim() || !password.trim()) {
       setError(ERROR_MESSAGES[400]);
       return;
@@ -44,23 +41,27 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. Tembak API Login ke backend
       const data = await loginUser({
         email: email.trim(),
-        password: password,
+        password: password.trim(),
       });
 
       console.log("Login success:", data);
 
-      // 2. Arahkan halaman berdasarkan Role ID user (seperti di Signup)
       if (data.user?.roleID === 3) {
-        router.replace("/Adminreport"); // Ke halaman Admin
+        router.replace("/Adminreport");
       } else {
-        router.replace("/home"); // Ke halaman Buyer / Customer
+        router.replace("/home");
       }
     } catch (e: any) {
-      // Tangkap pesan error dari apiClient atau backend
       const status = e.response?.status || 500;
+
+      // Kalau inactive → redirect ke OTP verify
+      if (status === 403) {
+        router.push({ pathname: "/otpverify", params: { email: email.trim() } });
+        return;
+      }
+
       const msg = ERROR_MESSAGES[status] || e.message || ERROR_MESSAGES[500];
       setError(msg);
     } finally {
@@ -107,7 +108,7 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(t) => {
               setEmail(t);
-              if (error) setError(null); // clear error saat user mulai retry
+              if (error) setError(null);
             }}
             placeholder="example@gmail.com"
             placeholderTextColor="rgba(116, 139, 111, 0.4)"
@@ -146,20 +147,16 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        {/* Remember me + Forgot Password */}
+        {/* Forgot Password */}
         <View style={styles.rowBetween}>
-          {/* Mengganti navigation.navigate menjadi router.push agar tidak error di Expo Router */}
           <Pressable onPress={() => router.push("/forgotpassword")}>
             <Text style={styles.smallText}>Forgot Password?</Text>
           </Pressable>
         </View>
 
-        {/* Get Started Button */}
+        {/* Login Button */}
         <Pressable
-          style={[
-            styles.primaryButton,
-            loading && styles.primaryButtonDisabled,
-          ]}
+          style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
@@ -191,18 +188,12 @@ const shadowStyle = Platform.select({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  android: {
-    elevation: 4,
-  },
-  default: {
-    boxShadow: "0 4px 4px 0 rgba(0,0,0,0.25)",
-  },
+  android: { elevation: 4 },
+  default: { boxShadow: "0 4px 4px 0 rgba(0,0,0,0.25)" },
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     alignItems: "center",
@@ -212,131 +203,39 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
   },
-  logo: {
-    width: 144,
-    height: 144,
-    marginTop: 32,
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#748B6F",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#748B6F",
-    textAlign: "center",
-    marginBottom: 24,
-  },
+  logo: { width: 144, height: 144, marginTop: 32, marginBottom: 24 },
+  title: { fontSize: 30, fontWeight: "700", color: "#748B6F", textAlign: "center", marginBottom: 4 },
+  subtitle: { fontSize: 12, color: "#748B6F", textAlign: "center", marginBottom: 24 },
   errorBanner: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FEE2E2",
-    borderLeftWidth: 3,
-    borderLeftColor: "#DC2626",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
+    width: "100%", flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#FEE2E2", borderLeftWidth: 3, borderLeftColor: "#DC2626",
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16,
   },
-  errorText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#B91C1C",
-    lineHeight: 16,
-  },
-  field: {
-    width: "100%",
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#748B6F",
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
+  errorText: { flex: 1, fontSize: 12, fontWeight: "600", color: "#B91C1C", lineHeight: 16 },
+  field: { width: "100%", marginBottom: 12 },
+  label: { fontSize: 14, fontWeight: "700", color: "#748B6F", marginBottom: 8, paddingLeft: 4 },
   input: {
-    width: "100%",
-    height: 41,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    fontSize: 12,
-    color: "#748B6F",
-    ...shadowStyle,
+    width: "100%", height: 41, borderRadius: 999, backgroundColor: "#fff",
+    paddingHorizontal: 20, fontSize: 12, color: "#748B6F", ...shadowStyle,
   },
-  passwordContainer: {
-    position: "relative",
-    justifyContent: "center",
-  },
+  passwordContainer: { position: "relative", justifyContent: "center" },
   passwordInput: {
-    width: "100%",
-    height: 41,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    paddingLeft: 20,
-    paddingRight: 48,
-    fontSize: 12,
-    color: "#748B6F",
-    ...shadowStyle,
+    width: "100%", height: 41, borderRadius: 999, backgroundColor: "#fff",
+    paddingLeft: 20, paddingRight: 48, fontSize: 12, color: "#748B6F", ...shadowStyle,
   },
-  eyeIcon: {
-    position: "absolute",
-    right: 16,
-    height: "100%",
-    justifyContent: "center",
-  },
+  eyeIcon: { position: "absolute", right: 16, height: "100%", justifyContent: "center" },
   rowBetween: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "flex-end", // Diubah supaya Forgot Password rata kanan
-    alignItems: "center",
-    marginTop: 4,
-    marginBottom: 24,
-    paddingHorizontal: 4,
+    width: "100%", flexDirection: "row", justifyContent: "flex-end",
+    alignItems: "center", marginTop: 4, marginBottom: 24, paddingHorizontal: 4,
   },
-  smallText: {
-    fontSize: 12, // Saya besarkan sedikit agar mudah diklik di HP
-    fontWeight: "700",
-    color: "#324D3E",
-  },
+  smallText: { fontSize: 12, fontWeight: "700", color: "#324D3E" },
   primaryButton: {
-    paddingHorizontal: 32,
-    height: 40, // Saya besarkan sedikit agar lebih enak ditekan
-    borderRadius: 999,
-    backgroundColor: "#324D3E",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-    ...shadowStyle,
+    paddingHorizontal: 32, height: 40, borderRadius: 999, backgroundColor: "#324D3E",
+    alignItems: "center", justifyContent: "center", marginBottom: 24, ...shadowStyle,
   },
-  primaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  signupRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 16,
-  },
-  signupText: {
-    color: "#fff",
-    fontSize: 14,
-  },
-  signupLink: {
-    color: "#748B6F",
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  primaryButtonDisabled: { opacity: 0.6 },
+  primaryButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  signupRow: { flexDirection: "row", alignItems: "center", marginTop: 16 },
+  signupText: { color: "#fff", fontSize: 14 },
+  signupLink: { color: "#748B6F", fontSize: 14, fontWeight: "700" },
 });

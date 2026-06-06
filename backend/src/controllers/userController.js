@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require('bcrypt');
 
 async function changeUserRole(req, res) {
     try {
@@ -103,4 +104,51 @@ async function getUserPoints(req, res) {
     }
 }
 
-module.exports = { changeUserRole, deleteAccount, getUserPoints };
+async function updateProfile(req, res) {
+  const userID = req.user.id; // dari JWT middleware
+  const { full_name, email, phone, address } = req.body;
+
+  try {
+    await pool.query(
+      'UPDATE user SET full_name = ?, email = ?, phone = ?, address = ? WHERE userID = ?',
+      [full_name, email, phone, address, userID]
+    );
+
+    const [rows] = await pool.query(
+      'SELECT userID, full_name, email, phone, address, roleID FROM user WHERE userID = ?',
+      [userID]
+    );
+
+    res.status(200).json({ message: 'Profil berhasil diperbarui.', user: rows[0] });
+  } catch (error) {
+    console.error('[updateProfile]', error);
+    if (error.code === 'ER_DUP_ENTRY')
+      return res.status(400).json({ message: 'Email sudah digunakan akun lain.' });
+    res.status(500).json({ message: 'Server error saat update profil.' });
+  }
+}
+
+async function changePassword(req, res) {
+  const userID = req.user.id;
+  const { current_password, new_password } = req.body;
+
+  try {
+    const [rows] = await pool.query('SELECT password FROM user WHERE userID = ?', [userID]);
+    if (rows.length === 0)
+      return res.status(404).json({ message: 'User tidak ditemukan.' });
+
+    const valid = await bcrypt.compare(current_password, rows[0].password);
+    if (!valid)
+      return res.status(401).json({ message: 'Password saat ini salah.' });
+
+    const hashed = await bcrypt.hash(new_password, 10);
+    await pool.query('UPDATE user SET password = ? WHERE userID = ?', [hashed, userID]);
+
+    res.status(200).json({ message: 'Password berhasil diubah.' });
+  } catch (error) {
+    console.error('[changePassword]', error);
+    res.status(500).json({ message: 'Server error saat ganti password.' });
+  }
+}
+
+module.exports = { changeUserRole, deleteAccount, getUserPoints, updateProfile, changePassword };

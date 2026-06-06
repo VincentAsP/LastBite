@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import apiClient from '../api/apiClient.mjs';
 
 // === Error code mapping ===
 const FORGOT_ERRORS: Record<number, string> = {
@@ -45,11 +46,9 @@ export default function ForgotPassword() {
 
     try {
       // TODO: ganti dengan real API call
-      // const res = await fetch('https://api.your-app.com/auth/forgot-password', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email }),
-      // });
+        const res = await apiClient.post('/auth/forgot-password', { 
+        email: email.trim() 
+      });
       //
       // if (!res.ok) {
       //   const msg = FORGOT_ERRORS[res.status] ?? 'Terjadi kesalahan. Coba lagi';

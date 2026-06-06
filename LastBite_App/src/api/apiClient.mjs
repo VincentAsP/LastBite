@@ -45,32 +45,26 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // WAJIB tambahkan async
     const status = error.response?.status;
 
-    // Token expired / invalid → logout otomatis
-    if (status === 401 || status === 403) {
+    // Hanya 401 (token expired) yang auto-logout
+    // 403 JANGAN di-handle di sini — biarkan tiap screen yang handle
+    if (status === 401) {
       try {
-        // Gunakan AsyncStorage untuk menghapus data
         await AsyncStorage.removeItem("fw_token");
         await AsyncStorage.removeItem("fw_user");
-
-        // Redirect ke login menggunakan expo-router (bukan window.location)
-        // Ganti '/' jika halaman login-mu punya rute lain
         router.replace("/");
       } catch (e) {
         console.log("Gagal menghapus token", e);
       }
     }
 
-    // Bentuk error yang konsisten ke seluruh aplikasi
     const message =
       error.response?.data?.message ||
       error.message ||
       "Terjadi kesalahan. Coba lagi.";
 
-    return Promise.reject(new Error(message));
+    return Promise.reject(error); 
   },
 );
-
 export default apiClient;

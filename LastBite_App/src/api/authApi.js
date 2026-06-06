@@ -3,6 +3,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "./apiClient.mjs";
 
+
 /**
  * Daftar akun baru
  * @param {object} userData
@@ -51,7 +52,8 @@ export const logoutUser = async () => {
 
 /**
  * Ambil data user yang sedang login dari AsyncStorage
- * @returns {Promise<object|null>}
+ /**
+ * @returns {Promise<{userID: number, full_name: string, email: string, phone: string, address: string, roleID: number} | null>}
  */
 export const getCurrentUser = async () => {
   try {
@@ -74,3 +76,21 @@ export const isAuthenticated = async () => {
     return false;
   }
 };
+
+export const verifyOtp = (payload) =>
+  apiClient.post('/auth/verify-otp', payload).then(r => r.data);
+
+export const resendOtp = (payload) =>
+  apiClient.post('/auth/resend-otp', payload).then(r => r.data);
+
+// src/api/userApi.js
+// Request terkait data & aksi user yang sudah login
+/**
+ * Update profil user (nama, email, telepon, alamat)
+ * @param {{ full_name, email, phone, address }} profileData
+ */
+export const updateProfile = async (profileData) => {
+  const { data } = await apiClient.put('/user/profile', profileData);
+  return data;
+};
+

@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router"; // Wajib di-import untuk navigasi
-import { useState } from "react";
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -12,37 +12,176 @@ import {
   Text,
   TextInput,
   View,
-} from "react-native";
+} from 'react-native';
 
-// IMPORT FUNGSI API KAMU
-// Pastikan path-nya benar mengarah ke file authApi.js milikmu
-import { loginUser, registerUser } from "../api/authApi";
+import { registerUser } from "../api/authApi";
 
 // === Error code mapping ===
 const REGISTER_ERRORS: Record<number, string> = {
-  400: "Email sudah terdaftar",
-  500: "Kesalahan internal server. Silakan coba lagi",
+  400: 'Email is already registered',
+  500: 'Internal server error. Please try again',
 };
 
-const LOGIN_ERRORS: Record<number, string> = {
-  400: "Email dan password wajib diisi",
-  401: "Email atau password salah",
-  500: "Kesalahan pada server. Silakan coba lagi nanti",
-};
+const MONTHS = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December',
+];
+const WEEKDAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
+// ─── Calendar Picker ───
+function CalendarPicker({
+  visible,
+  selectedDate,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  selectedDate: Date | null;
+  onSelect: (d: Date) => void;
+  onClose: () => void;
+}) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const initYear = selectedDate ? selectedDate.getFullYear() : today.getFullYear() - 20;
+  const initMonth = selectedDate ? selectedDate.getMonth() : today.getMonth();
+
+  const [viewYear, setViewYear] = useState(initYear);
+  const [viewMonth, setViewMonth] = useState(initMonth);
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const isSel = (d: number) =>
+    selectedDate !== null &&
+    selectedDate.getDate() === d &&
+    selectedDate.getMonth() === viewMonth &&
+    selectedDate.getFullYear() === viewYear;
+
+  // For birth date: allow past dates only (up to today)
+  const isFuture = (d: number) => {
+    const cell = new Date(viewYear, viewMonth, d);
+    cell.setHours(0, 0, 0, 0);
+    return cell > today;
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={cal.overlay} onPress={onClose}>
+        <Pressable style={cal.card} onPress={e => e.stopPropagation()}>
+          {/* Header */}
+          <View style={cal.header}>
+            <Pressable style={cal.navBtn} onPress={prevMonth}>
+              <Ionicons name="chevron-back" size={18} color="#1F3A2E" />
+            </Pressable>
+            <View style={cal.monthYearRow}>
+              <Text style={cal.monthLabel}>{MONTHS[viewMonth]}</Text>
+              <Text style={cal.yearLabel}>{viewYear}</Text>
+            </View>
+            <Pressable style={cal.navBtn} onPress={nextMonth}>
+              <Ionicons name="chevron-forward" size={18} color="#1F3A2E" />
+            </Pressable>
+          </View>
+
+          {/* Weekday labels */}
+          <View style={cal.weekRow}>
+            {WEEKDAYS.map(w => (
+              <Text key={w} style={cal.weekLabel}>{w}</Text>
+            ))}
+          </View>
+
+          {/* Days grid */}
+          <View style={cal.grid}>
+            {cells.map((d, i) => {
+              if (!d) return <View key={`e-${i}`} style={cal.cell} />;
+              const future = isFuture(d);
+              const sel = isSel(d);
+              return (
+                <Pressable
+                  key={`d-${d}`}
+                  style={[cal.cell, sel && cal.cellSel, future && cal.cellDisabled]}
+                  onPress={() => {
+                    if (!future) {
+                      onSelect(new Date(viewYear, viewMonth, d));
+                      onClose();
+                    }
+                  }}
+                  disabled={future}
+                >
+                  <Text style={[cal.cellText, sel && cal.cellTextSel, future && cal.cellTextDisabled]}>
+                    {d}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable style={cal.cancelBtn} onPress={onClose}>
+            <Text style={cal.cancelText}>Cancel</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const cal = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center', alignItems: 'center', padding: 24,
+  },
+  card: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20,
+    width: '100%', maxWidth: 340,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24 },
+      android: { elevation: 12 },
+      default: { boxShadow: '0 8px 32px rgba(0,0,0,0.18)' },
+    }),
+  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  navBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F3F4F3', alignItems: 'center', justifyContent: 'center' },
+  monthYearRow: { alignItems: 'center' },
+  monthLabel: { fontSize: 16, fontWeight: '700', color: '#1F3A2E' },
+  yearLabel: { fontSize: 12, color: '#7A8A7A', marginTop: 1 },
+  weekRow: { flexDirection: 'row', marginBottom: 8 },
+  weekLabel: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: '#9BA89B' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  cell: { width: `${100/7}%` as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  cellSel: { backgroundColor: '#324D3E' },
+  cellDisabled: { opacity: 0.25 },
+  cellText: { fontSize: 14, color: '#1F3A2E', fontWeight: '500' },
+  cellTextSel: { color: '#fff', fontWeight: '700' },
+  cellTextDisabled: { color: '#9BA89B' },
+  cancelBtn: { marginTop: 16, paddingVertical: 12, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F3F4F3' },
+  cancelText: { fontSize: 14, color: '#B91C1C', fontWeight: '600' },
+});
+
+// ─── Main Component ───
 export default function SignUp() {
-  const [activeTab, setActiveTab] = useState<"signup" | "signin">("signup");
-  const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedBirthDate, setSelectedBirthDate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    birthDate: "",
-    password: "",
-    confirmPassword: "",
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -50,31 +189,22 @@ export default function SignUp() {
     if (error) setError(null);
   };
 
-  const handleTabChange = (tab: "signup" | "signin") => {
-    setActiveTab(tab);
-    setError(null);
-  };
+  const formatDate = (d: Date) =>
+    `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 
   const handleSignUp = async () => {
     setError(null);
 
-    if (!agreed) {
-      setError("Please agree to Terms & Conditions first");
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      setError("Password and confirmation do not match");
-      return;
-    }
+    if (!form.fullName.trim()) { setError('Please enter your full name'); return; }
+    if (!form.email.trim()) { setError('Please enter your email'); return; }
+    if (!selectedBirthDate) { setError('Please select your date of birth'); return; }
+    if (form.password !== form.confirmPassword) { setError('Password and confirmation do not match'); return; }
 
     setLoading(true);
-
     try {
-      // 1. Susun payload sesuai dengan struktur tabel Database kamu
       const payload = {
-        full_name: `${form.firstName} ${form.lastName}`.trim(),
-        birth_date: form.birthDate,
+        full_name: form.fullName.trim(),
+        birth_date: selectedBirthDate,
         email: form.email,
         password: form.password,
         address: "Alamat belum diisi", // Opsional, sesuaikan jika backend mewajibkan
@@ -97,96 +227,24 @@ export default function SignUp() {
     }
   };
 
-  const handleSignIn = async () => {
-    setError(null);
-
-    if (!form.email.trim() || !form.password.trim()) {
-      setError(LOGIN_ERRORS[400]);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // 1. Tembak API Login
-      const data = await loginUser({
-        email: form.email,
-        password: form.password,
-      });
-
-      console.log("Login success:", data);
-
-      // 2. Arahkan halaman berdasarkan Role ID user
-      if (data.user?.roleID === 3) {
-        router.replace("/Adminreport"); // Admin
-      } else {
-        router.replace("/home"); // Buyer / Customer biasa
-      }
-    } catch (e: any) {
-      // Tangkap pesan error
-      const status = e.response?.status || 500;
-      const msg = LOGIN_ERRORS[status] || e.message || "Kesalahan pada server.";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (activeTab === "signup") handleSignUp();
-    else handleSignIn();
-  };
-
   return (
-    <LinearGradient colors={["#DAE6D8", "#92AF8C"]} style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <LinearGradient colors={['#DAE6D8', '#92AF8C']} style={styles.container}>
+      {/* Calendar popup */}
+      <CalendarPicker
+        visible={showCalendar}
+        selectedDate={selectedBirthDate}
+        onSelect={(d) => { setSelectedBirthDate(d); if (error) setError(null); }}
+        onClose={() => setShowCalendar(false)}
+      />
+
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Get Started Now</Text>
-          <Text style={styles.subtitle}>
-            Create an account or Log in to explore!
-          </Text>
+          <Text style={styles.subtitle}>Create an account or Log in to explore!</Text>
         </View>
 
-        {/* Tab Switcher */}
-        <View style={styles.tabSwitcher}>
-          <Pressable
-            onPress={() => handleTabChange("signup")}
-            style={[
-              styles.tabButton,
-              activeTab === "signup" && styles.tabButtonActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "signup" && styles.tabButtonTextActive,
-              ]}
-            >
-              Sign Up
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => handleTabChange("signin")}
-            style={[
-              styles.tabButton,
-              activeTab === "signin" && styles.tabButtonActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === "signin" && styles.tabButtonTextActive,
-              ]}
-            >
-              Sign In
-            </Text>
-          </Pressable>
-        </View>
+        <Text style={styles.pageTitle}>Sign Up</Text>
 
         {/* Error Banner */}
         {error && (
@@ -196,250 +254,128 @@ export default function SignUp() {
           </View>
         )}
 
-        {/* Form Sign Up */}
-        {activeTab === "signup" && (
-          <View style={styles.form}>
-            <View style={styles.row}>
-              <View style={styles.halfField}>
-                <Text style={styles.label}>First Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={form.firstName}
-                  onChangeText={(text) => handleChange("firstName", text)}
-                  autoCapitalize="words"
-                  editable={!loading}
-                />
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.label}>Last Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={form.lastName}
-                  onChangeText={(text) => handleChange("lastName", text)}
-                  autoCapitalize="words"
-                  editable={!loading}
-                />
-              </View>
-            </View>
+        {/* Form */}
+        <View style={styles.form}>
+          <View style={styles.field}>
+            <Text style={styles.label}>Full Name</Text>
+            <TextInput
+              style={styles.input}
+              value={form.fullName}
+              onChangeText={(t) => handleChange('fullName', t)}
+              autoCapitalize="words"
+              editable={!loading}
+            />
+          </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={form.email}
-                onChangeText={(text) => handleChange("email", text)}
-                placeholder="example@gmail.com"
-                placeholderTextColor="rgba(116, 139, 111, 0.4)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-              />
-            </View>
+          <View style={styles.field}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              value={form.email}
+              onChangeText={(t) => handleChange('email', t)}
+              placeholder="example@gmail.com"
+              placeholderTextColor="rgba(116,139,111,0.4)"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Birth of Date</Text>
-              <TextInput
-                style={styles.input}
-                value={form.birthDate}
-                onChangeText={(text) => handleChange("birthDate", text)}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor="rgba(116, 139, 111, 0.4)"
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Set Password</Text>
-              <TextInput
-                style={styles.input}
-                value={form.password}
-                onChangeText={(text) => handleChange("password", text)}
-                secureTextEntry
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <TextInput
-                style={styles.input}
-                value={form.confirmPassword}
-                onChangeText={(text) => handleChange("confirmPassword", text)}
-                secureTextEntry
-                editable={!loading}
-              />
-            </View>
-
-            {/* Terms & Conditions */}
+          {/* Birth Date — calendar picker */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Date of Birth</Text>
             <Pressable
-              style={styles.termsRow}
-              onPress={() => setAgreed((v) => !v)}
+              style={[styles.input, styles.dateButton]}
+              onPress={() => !loading && setShowCalendar(true)}
+            >
+              <Text style={[styles.dateButtonText, !selectedBirthDate && styles.dateButtonPlaceholder]}>
+                {selectedBirthDate ? formatDate(selectedBirthDate) : 'DD/MM/YYYY'}
+              </Text>
+              <Ionicons name="calendar-outline" size={20} color="#324D3E" />
+            </Pressable>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Set Password</Text>
+            <TextInput
+              style={styles.input}
+              value={form.password}
+              onChangeText={(t) => handleChange('password', t)}
+              secureTextEntry
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              style={styles.input}
+              value={form.confirmPassword}
+              onChangeText={(t) => handleChange('confirmPassword', t)}
+              secureTextEntry
+              editable={!loading}
+            />
+          </View>
+
+          {/* Sign Up Button */}
+          <View style={styles.submitWrapper}>
+            <Pressable
+              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+              onPress={handleSignUp}
               disabled={loading}
             >
-              <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
-                {agreed && <Ionicons name="checkmark" size={14} color="#fff" />}
-              </View>
-              <Text style={styles.termsText}>
-                I agree to the{" "}
-                <Text
-                  style={styles.termsLink}
-                  onPress={() => setShowTerms(true)}
-                >
-                  Terms & Conditions
-                </Text>{" "}
-                for customers and sellers
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#DAE6D8" />
+              ) : (
+                <Text style={styles.submitButtonText}>Sign Up</Text>
+              )}
             </Pressable>
-
-            <View style={styles.submitWrapper}>
-              <Pressable
-                style={[
-                  styles.submitButton,
-                  (!agreed || loading) && styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={!agreed || loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#DAE6D8" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Sign Up</Text>
-                )}
-              </Pressable>
-            </View>
           </View>
-        )}
 
-        {/* Form Sign In */}
-        {activeTab === "signin" && (
-          <View style={styles.form}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                value={form.email}
-                onChangeText={(text) => handleChange("email", text)}
-                placeholder="example@gmail.com"
-                placeholderTextColor="rgba(116, 139, 111, 0.4)"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-              />
-            </View>
+          <Text style={styles.fineprint}>
+            By signing up, you agree to our{' '}
+            <Text style={styles.fineprintLink} onPress={() => setShowTerms(true)}>
+              Terms & Conditions
+            </Text>
+          </Text>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                value={form.password}
-                onChangeText={(text) => handleChange("password", text)}
-                secureTextEntry
-                editable={!loading}
-              />
-            </View>
-
-            <View style={styles.submitWrapper}>
-              <Pressable
-                style={[
-                  styles.submitButton,
-                  loading && styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#DAE6D8" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Sign In</Text>
-                )}
-              </Pressable>
-            </View>
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Pressable onPress={() => router.push('/')}>
+              <Text style={styles.footerLink}>Sign In</Text>
+            </Pressable>
           </View>
-        )}
+        </View>
       </ScrollView>
 
       {/* Modal Terms & Conditions */}
-      <Modal
-        visible={showTerms}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setShowTerms(false)}
-      >
+      <Modal visible={showTerms} animationType="slide" transparent onRequestClose={() => setShowTerms(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Terms & Conditions</Text>
-              <Pressable
-                onPress={() => setShowTerms(false)}
-                style={styles.closeButton}
-              >
+              <Pressable onPress={() => setShowTerms(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={20} color="#324D3E" />
               </Pressable>
             </View>
-
-            <ScrollView
-              style={styles.modalBody}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.sectionHeading}>1. General</Text>
-              <Text style={styles.sectionBody}>
-                By creating an account, you agree to be bound by these Terms &
-                Conditions. You confirm that the information you provide is
-                accurate and that you are at least 17 years old.
-              </Text>
-
-              <Text style={styles.sectionHeading}>2. As a Customer</Text>
-              <Text style={styles.sectionBody}>
-                You agree to provide valid payment and delivery information, to
-                follow the ordering and cancellation policies, and not to misuse
-                the platform for fraudulent activity such as fake orders or
-                chargeback abuse.
-              </Text>
-
-              <Text style={styles.sectionHeading}>3. As a Seller</Text>
-              <Text style={styles.sectionBody}>
-                If you choose to sell on this platform, you agree to provide
-                accurate menu, price, and stock information, to fulfill orders
-                in a timely manner, and to comply with all applicable food
-                safety, hygiene, and tax regulations in your area.
-              </Text>
-
-              <Text style={styles.sectionHeading}>4. Fees & Payments</Text>
-              <Text style={styles.sectionBody}>
-                A service fee may be deducted from each transaction. Payouts to
-                sellers will be processed according to the schedule stated in
-                the seller dashboard.
-              </Text>
-
-              <Text style={styles.sectionHeading}>5. Account Suspension</Text>
-              <Text style={styles.sectionBody}>
-                We reserve the right to suspend or terminate accounts that
-                violate these terms, including fraud, harassment, or repeated
-                negative reviews and complaints.
-              </Text>
-
-              <Text style={styles.sectionHeading}>6. Privacy</Text>
-              <Text style={styles.sectionBody}>
-                Your data will be processed according to our Privacy Policy. We
-                will never sell your personal information to third parties.
-              </Text>
-
-              <Text style={styles.sectionHeading}>7. Changes</Text>
-              <Text style={styles.sectionBody}>
-                These terms may be updated from time to time. Continued use of
-                the platform after changes are published means you accept the
-                updated terms.
-              </Text>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {[
+                ['1. General', 'By creating an account, you agree to be bound by these Terms & Conditions. You confirm that the information you provide is accurate and that you are at least 17 years old.'],
+                ['2. As a Customer', 'You agree to provide valid payment and delivery information, to follow the ordering and cancellation policies, and not to misuse the platform for fraudulent activity such as fake orders or chargeback abuse.'],
+                ['3. As a Seller', 'If you choose to sell on this platform, you agree to provide accurate menu, price, and stock information, to fulfill orders in a timely manner, and to comply with all applicable food safety, hygiene, and tax regulations in your area.'],
+                ['4. Fees & Payments', 'A service fee may be deducted from each transaction. Payouts to sellers will be processed according to the schedule stated in the seller dashboard.'],
+                ['5. Account Suspension', 'We reserve the right to suspend or terminate accounts that violate these terms, including fraud, harassment, or repeated negative reviews and complaints.'],
+                ['6. Privacy', 'Your data will be processed according to our Privacy Policy. We will never sell your personal information to third parties.'],
+                ['7. Changes', 'These terms may be updated from time to time. Continued use of the platform after changes are published means you accept the updated terms.'],
+              ].map(([heading, body]) => (
+                <View key={heading}>
+                  <Text style={styles.sectionHeading}>{heading}</Text>
+                  <Text style={styles.sectionBody}>{body}</Text>
+                </View>
+              ))}
             </ScrollView>
-
-            <Pressable
-              style={styles.modalAgreeButton}
-              onPress={() => {
-                setAgreed(true);
-                setShowTerms(false);
-              }}
-            >
-              <Text style={styles.modalAgreeText}>I Agree</Text>
+            <Pressable style={styles.modalAgreeButton} onPress={() => setShowTerms(false)}>
+              <Text style={styles.modalAgreeText}>Got it</Text>
             </Pressable>
           </View>
         </View>
@@ -449,234 +385,55 @@ export default function SignUp() {
 }
 
 const shadowStyle = Platform.select({
-  ios: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  android: {
-    elevation: 4,
-  },
-  default: {
-    boxShadow: "0 4px 4px 0 rgba(0,0,0,0.25)",
-  },
+  ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  android: { elevation: 4 },
+  default: { boxShadow: '0 4px 4px 0 rgba(0,0,0,0.25)' },
 });
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  title: {
-    color: "#748B6F",
-    fontWeight: "700",
-    fontSize: 32,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    color: "#748B6F",
-    fontSize: 12,
-    textAlign: "center",
-  },
-  tabSwitcher: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 999,
-    padding: 4,
-    marginBottom: 20,
-    ...shadowStyle,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: "center",
-  },
-  tabButtonActive: {
-    backgroundColor: "#324D3E",
-  },
-  tabButtonText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#DAE6D8",
-  },
-  tabButtonTextActive: {
-    color: "#DAE6D8",
-  },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#FEE2E2",
-    borderLeftWidth: 3,
-    borderLeftColor: "#DC2626",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#B91C1C",
-    lineHeight: 16,
-  },
-  form: {
-    gap: 20,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  field: {
-    gap: 4,
-  },
-  halfField: {
-    flex: 1,
-    gap: 4,
-  },
-  label: {
-    color: "#748B6F",
-    fontSize: 14,
-    fontWeight: "700",
-    paddingLeft: 4,
-  },
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 40 },
+  header: { alignItems: 'center', marginBottom: 12 },
+  title: { color: '#324D3E', fontWeight: '800', fontSize: 30, marginBottom: 6, textAlign: 'center' },
+  subtitle: { color: '#5C6E5E', fontSize: 12, textAlign: 'center' },
+  pageTitle: { color: '#324D3E', fontSize: 30, fontWeight: '800', textAlign: 'center', marginBottom: 20, marginTop: 4 },
+  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEE2E2', borderLeftWidth: 3, borderLeftColor: '#DC2626', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 16 },
+  errorText: { flex: 1, fontSize: 12, fontWeight: '600', color: '#B91C1C', lineHeight: 16 },
+  form: { gap: 16 },
+  field: { gap: 6 },
+  label: { color: '#324D3E', fontSize: 13, fontWeight: '700', paddingLeft: 4 },
   input: {
-    height: 41,
-    borderRadius: 999,
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    color: "#748B6F",
-    fontSize: 14,
+    height: 44, borderRadius: 999, backgroundColor: '#fff',
+    paddingHorizontal: 18, color: '#324D3E', fontSize: 14,
     ...shadowStyle,
+    ...(Platform.OS === 'web' ? { outlineWidth: 0 } : {}),
+  } as any,
+
+  /* Date picker button — same shape as input */
+  dateButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingRight: 14,
   },
-  termsRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: "#324D3E",
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
-  },
-  checkboxChecked: {
-    backgroundColor: "#324D3E",
-  },
-  termsText: {
-    flex: 1,
-    fontSize: 13,
-    color: "#748B6F",
-    lineHeight: 18,
-  },
-  termsLink: {
-    fontWeight: "700",
-    color: "#324D3E",
-    textDecorationLine: "underline",
-  },
-  submitWrapper: {
-    alignItems: "center",
-    marginTop: 8,
-  },
-  submitButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 10,
-    minWidth: 140,
-    borderRadius: 999,
-    backgroundColor: "#324D3E",
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadowStyle,
-  },
-  submitButtonDisabled: {
-    opacity: 0.5,
-  },
-  submitButtonText: {
-    color: "#DAE6D8",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 32,
-    maxHeight: "85%",
-    width: "100%",
-    maxWidth: 402,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#324D3E",
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#DAE6D8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalBody: {
-    marginBottom: 16,
-  },
-  sectionHeading: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#324D3E",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  sectionBody: {
-    fontSize: 13,
-    color: "#5C6E5E",
-    lineHeight: 19,
-  },
-  modalAgreeButton: {
-    backgroundColor: "#324D3E",
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: "center",
-    ...shadowStyle,
-  },
-  modalAgreeText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
+  dateButtonText: { fontSize: 14, color: '#324D3E', flex: 1 },
+  dateButtonPlaceholder: { color: 'rgba(116,139,111,0.4)' },
+
+  submitWrapper: { alignItems: 'center', marginTop: 16 },
+  submitButton: { paddingHorizontal: 40, paddingVertical: 12, minWidth: 160, borderRadius: 999, backgroundColor: '#324D3E', alignItems: 'center', justifyContent: 'center', ...shadowStyle },
+  submitButtonDisabled: { opacity: 0.5 },
+  submitButtonText: { color: '#DAE6D8', fontSize: 15, fontWeight: '700' },
+  fineprint: { fontSize: 11, color: '#5C6E5E', textAlign: 'center', marginTop: 6, lineHeight: 16 },
+  fineprintLink: { fontWeight: '700', color: '#324D3E', textDecorationLine: 'underline' },
+  footerRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 14 },
+  footerText: { fontSize: 13, color: '#5C6E5E' },
+  footerLink: { fontSize: 13, fontWeight: '700', color: '#324D3E', textDecorationLine: 'underline' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end', alignItems: 'center' },
+  modalContainer: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32, maxHeight: '85%', width: '100%', maxWidth: 402 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#324D3E' },
+  closeButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#DAE6D8', alignItems: 'center', justifyContent: 'center' },
+  modalBody: { marginBottom: 16 },
+  sectionHeading: { fontSize: 14, fontWeight: '700', color: '#324D3E', marginTop: 12, marginBottom: 4 },
+  sectionBody: { fontSize: 13, color: '#5C6E5E', lineHeight: 19 },
+  modalAgreeButton: { backgroundColor: '#324D3E', borderRadius: 999, paddingVertical: 14, alignItems: 'center', ...shadowStyle },
+  modalAgreeText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
